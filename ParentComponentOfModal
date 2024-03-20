@@ -1,0 +1,25 @@
+// ParentComponent.js
+import React, { useState } from 'react';
+import ModalComponent from './ModalComponent';
+import Button from 'react-bootstrap/Button';
+
+const ParentComponent = () => {
+  const [showModal, setShowModal] = useState(false);
+
+  // Function to toggle the showModal state
+  const toggleModal = () => {
+    setShowModal(!showModal);
+  };
+
+  return (
+    <div>
+      {/* Button to toggle the showModal state */}
+      <Button onClick={toggleModal}>Toggle Modal</Button>
+
+      {/* Conditional rendering of ModalComponent based on the showModal state */}
+      {showModal && <ModalComponent onClose={toggleModal} />}
+    </div>
+  );
+};
+
+export default ParentComponent;
