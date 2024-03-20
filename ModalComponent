@@ -1,0 +1,114 @@
+import React, { useState } from 'react';
+import Modal from 'react-bootstrap/Modal';
+import Button from 'react-bootstrap/Button';
+import Form from 'react-bootstrap/Form';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+
+const ModalComponent = ({ onClose }) => {
+  const [title, setTitle] = useState('Sample Title');
+  const [description, setDescription] = useState('Sample Description');
+  const [editingField, setEditingField] = useState(null);
+  const [showSecondModal, setShowSecondModal] = useState(false);
+
+  const [buttonCoordinates, setButtonCoordinates] = useState({ x: 0, y: 0 });
+
+  const handleEditTitleClick = () => {
+    setEditingField('title');
+  };
+
+  const handleEditDescriptionClick = () => {
+    setEditingField('description');
+  };
+
+  const handleSaveClick = () => {
+    setEditingField(null);
+    // You can perform any save/update logic here
+  };
+
+  const handleButtonClick = (event) => {
+    const rect = event.target.getBoundingClientRect();
+    setButtonCoordinates({ x: rect.left, y: rect.top });
+    setShowSecondModal(true);
+  };
+  const handleCloseSecondModal = () => {
+    setShowSecondModal(false);
+  };
+
+  return (
+    <>
+      <Modal show={true} onHide={onClose} size="xl">
+        <Modal.Header closeButton>
+          <Modal.Title>Modal Title</Modal.Title>
+        </Modal.Header>
+        <Modal.Body style={{ height: '70vh', overflowY: 'auto' }}>
+          {/* Title field */}
+          <Form.Group controlId="title">
+            {editingField === 'title' ? (
+              <Form.Control
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                onBlur={handleSaveClick}
+                autoFocus
+              />
+            ) : (
+              <Form.Label onClick={handleEditTitleClick} style={{ cursor: 'pointer' }}>
+                {title}
+              </Form.Label>
+            )}
+          </Form.Group>
+          {/* Description field */}
+          <div className="row">
+            <div className="col-9">
+              {editingField === 'description' ? (
+                <ReactQuill
+                  value={description}
+                  onChange={setDescription}
+                  onBlur={handleSaveClick}
+                />
+              ) : (
+                <div onClick={handleEditDescriptionClick} style={{ cursor: 'pointer' }}>
+                  <div dangerouslySetInnerHTML={{ __html: description }} />
+                </div>
+              )}
+            </div>
+            <div className="col-3">
+              {/* Buttons */}
+              <Button variant="primary" onClick={handleButtonClick}>Open Second Modal</Button>
+            </div>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          {(editingField === 'title' || editingField === 'description') && (
+            <Button variant="primary" onClick={handleSaveClick}>
+              Save
+            </Button>
+          )}
+          <Button variant="secondary" onClick={onClose}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Second Modal */}
+      <Modal
+        show={showSecondModal}
+        onHide={handleCloseSecondModal}
+        style={{ top: buttonCoordinates.y + 40, left: buttonCoordinates.x, zIndex: 1050 }}
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Second Modal</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>This is the second modal.</Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCloseSecondModal}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </>
+  );
+};
+
+export default ModalComponent;
