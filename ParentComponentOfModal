@@ -1,23 +1,62 @@
-// ParentComponent.js
 import React, { useState } from 'react';
-import ModalComponent from './ModalComponent';
-import Button from 'react-bootstrap/Button';
+import { Button, Modal } from 'antd';
+import SecondComponent from './SecondComponent';
 
 const ParentComponent = () => {
-  const [showModal, setShowModal] = useState(false);
+  const [showParentModal, setShowParentModal] = useState(false);
+  const [showSecondModal, setShowSecondModal] = useState(false);
+  const [modalPosition, setModalPosition] = useState({ top: 250, left: 700 });
+  const [modalContent, setModalContent] = useState(null); // New state for modal content
 
-  // Function to toggle the showModal state
-  const toggleModal = () => {
-    setShowModal(!showModal);
+  const handleOpenParentModal = () => {
+    setShowParentModal(true);
+  };
+
+  const handleCloseParentModal = () => {
+    setShowParentModal(false);
+  };
+
+  const handleOpenSecondModal = (content) => { // Modified to accept content argument
+    setModalContent(content); // Set the modal content based on the argument
+    setShowSecondModal(true);
+  };
+
+  const handleCloseSecondModal = () => {
+    setShowSecondModal(false);
   };
 
   return (
     <div>
-      {/* Button to toggle the showModal state */}
-      <Button onClick={toggleModal}>Toggle Modal</Button>
+      <Button type="primary" onClick={handleOpenParentModal}>
+        Open Parent Modal
+      </Button>
 
-      {/* Conditional rendering of ModalComponent based on the showModal state */}
-      {showModal && <ModalComponent onClose={toggleModal} />}
+      <Modal
+        title="Parent Modal"
+        visible={showParentModal}
+        onCancel={handleCloseParentModal}
+        footer={[
+          <Button key="back" onClick={handleCloseParentModal}>
+            Close
+          </Button>,
+          <Button key="openSecond" onClick={() => handleOpenSecondModal('1')}> {/* Pass content '1' */}
+            Open Second Modal 1
+          </Button>,
+          <Button key="openSecond" onClick={() => handleOpenSecondModal('2')}> {/* Pass content '2' */}
+            Open Second Modal 2
+          </Button>,
+          <Button key="openSecond" onClick={() => handleOpenSecondModal('3')}> {/* Pass content '3' */}
+            Open Second Modal 3
+          </Button>,
+          <Button key="openSecond" onClick={() => handleOpenSecondModal('4')}> {/* Pass content '4' */}
+            Open Second Modal 4
+          </Button>
+        ]}
+      >
+        <p>This is the content of the parent modal.</p>
+      </Modal>
+
+      <SecondComponent visible={showSecondModal} onClose={handleCloseSecondModal} position={modalPosition} content={modalContent} /> {/* Pass modalContent */}
     </div>
   );
 };
