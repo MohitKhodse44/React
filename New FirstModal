@@ -1,0 +1,156 @@
+
+
+import React, { useState } from 'react';
+import { Avatar, Button, DatePicker, Flex, Input, Modal } from 'antd';
+import { Typography, ArrowRightOutlined } from 'antd';
+import { Editor, EditorState } from 'draft-js';
+import ReactQuill from 'react-quill';
+const ModaComponent = () => {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [value, setValue] = useState('');
+    const showModal = () => {
+        setIsModalOpen(true);
+    };
+
+    const handleChange = (content, delta, source, editor) => {
+        setValue(content);
+    };
+
+    const getPlainText = () => {
+        const plainText = value.replace(/<[^>]*>/g, ''); // Remove HTML tags
+        return plainText.trim(); // Trim any leading/trailing whitespace
+    };
+    const [editorState, setEditorState] = useState(() =>
+        EditorState.createEmpty()
+    );
+
+    const onChange = (editorState) => {
+        setEditorState(editorState);
+    };
+    return (
+        <>
+            <Button type="primary" onClick={showModal}>
+                Open Modal
+            </Button>
+            <Modal width={780} title="Basic Modal" open={isModalOpen}>
+                <div className="Container">
+                    <div className="row">
+                        <div className="col-12 col-md-9 pt-3 ">
+                            <div className="row" style={{ display: 'flex', alignItems: "center" }}>
+                                <div className="col-1 text-center">
+                                    M
+                                </div>
+                                <div className='col-10'>
+                                    <Input placeholder="Basic usage" />
+                                </div>
+                            </div>
+                            <div className="row pt-4 " style={{ display: 'flex', alignItems: "center" }}>
+                                <div className="row">
+                                    <div className="col-12 col-md-4 text-center" >
+                                        <span>Members</span><br />
+                                        <span className='pt-2'>
+                                            <Avatar.Group
+                                                maxCount={2}
+                                                maxStyle={{
+                                                    color: '#f56a00',
+                                                    backgroundColor: 'res',
+                                                }}
+                                            >
+                                                <Avatar src="https://api.dicebear.com/7.x/miniavs/svg?seed=2" />
+                                                <Avatar
+                                                    style={{
+                                                        backgroundColor: 'black',
+                                                    }}
+                                                >
+                                                    K
+                                                </Avatar>
+                                                <Avatar
+                                                    style={{
+                                                        backgroundColor: 'grey',
+                                                    }}
+                                                    M
+                                                />
+                                            </Avatar.Group></span>
+
+                                    </div>
+                                    <div className="col-12 col-md-4">
+                                        <span>Notification</span><br />
+                                        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-evenly' }}> <span>eeyse</span> <input class="form-check-input" type="checkbox" value="" id="flexCheckIndeterminate" /> <span>asdfg</span> </span>
+                                    </div>
+                                    <div className="col-12 col-md-3 text-end">
+                                        <span>Due Date</span><br />
+                                        <span> <DatePicker showTime /></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="row mt-4 " style={{ display: 'flex', alignItems: "center" }}>
+                                <div className="col-1 text-center">
+                                    M
+                                </div>
+                                <div className='col-10'>
+                                    <textarea style={{ width: '100%', borderRadius: '2%' }} name="" id="" cols="60" rows="4"></textarea>
+                                </div>
+                            </div>
+
+                            <div className="row pt-3 " style={{ display: 'flex', alignItems: "center" }}>
+                                <div className="row">
+                                    <div className="col-12 col-md-1 text-center">
+                                        log
+                                    </div>
+                                    <div className="col-12 col-md-10 ">
+                                        Attachment
+                                    </div>
+                                </div>
+                                <div className="row mt-3">
+                                    <div className="col-12 col-md-1">
+                                    </div>
+                                    <div className="col-12 col-md-11">
+                                        <div class="input-group mb-3">
+                                            <input type="file" class="form-control" id="inputGroupFile02" />
+                                            <label class="input-group-text" for="inputGroupFile02">Upload</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="row mt-4" style={{ display: 'flex', alignItems: "center" }}>
+                                <div className="col-1 text-center">
+                                    M
+                                </div>
+                                <div className='col-9'>
+                                    <Input placeholder="Basic usage" />
+                                </div>
+                                <div className='col-1'>
+                                   <button type='Button 'className='btn btn-secondary'>Save</button>
+                                </div>
+                            </div>
+                        </div>
+
+
+
+                        <div className=' col-12 col-md-3 mt-4'>
+                            <div className="col-12 p-1 mb-3 text-center" style={{backgroundColor:'#E2E5E5',cursor:'pointer'}} >
+                                <span className='p-4'>Add Member</span>
+                            </div>
+                            <div className="col-12 p-1 mb-3 text-center" style={{backgroundColor:'#E2E5E5',cursor:'pointer'}} >
+                                <span className='p-4'>Label</span>
+                            </div>
+                            <div className="col-12 p-1 mb-3 text-center" style={{backgroundColor:'#E2E5E5',cursor:'pointer'}} >
+                                <span className='p-4'>Date</span>
+                            </div>
+                            <div className="col-12 p-1 mb-3 text-center" style={{backgroundColor:'#E2E5E5',cursor:'pointer'}} >
+                                <span className='p-4'>CheckList</span>
+                            </div>
+                            <div className="col-12 p-1 mb-3 text-center"  style={{backgroundColor:'#E2E5E5',cursor:'pointer'}} >
+                                <span className='p-4'>Attachment</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </Modal>
+        </>
+    );
+};
+export default ModaComponent;
