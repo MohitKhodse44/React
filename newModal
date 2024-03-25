@@ -1,0 +1,343 @@
+
+
+import React, { useState } from 'react';
+import { Avatar, Button, Checkbox, DatePicker, Flex, Input, Modal } from 'antd';
+import { AlignRightOutlined, EditOutlined, LinkOutlined, SlidersOutlined } from '@ant-design/icons';
+import { EyeOutlined } from '@ant-design/icons';
+
+const ModaComponent = () => {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [value, setValue] = useState('');
+    const [showSecondModal, setSecondShowModal] = useState(false);
+    console.log('showSecondModal', showSecondModal);
+    const [modalContent, setModalContent] = useState('');
+    const [showActivity,setShowActivity]=useState(false);
+
+
+
+    const users = [
+        { UserName: 'John patil' },
+        { UserName: 'Alice raut' },
+        { UserName: 'Bob asd' },
+        { UserName: 'David Smith' },
+        { UserName: 'Emily Johnson' },
+        { UserName: 'Michael Brown' },
+        { UserName: 'Emma Davis' },
+        { UserName: 'Daniel Wilson' },
+    ];
+
+    const getUsernameInitials = (userName) => {
+        const nameParts = userName.split(' ');
+        const initials = nameParts.map(namePart => namePart[0].toUpperCase());
+        return initials.join('');
+    };
+
+    const showModal = () => {
+        setIsModalOpen(true);
+    };
+    const openModal = (content) => {
+        setModalContent(content);
+        setSecondShowModal(true);
+    };
+
+    const closeModal = () => {
+        setSecondShowModal(false);
+        setModalContent('');
+    };
+
+    let modalContentComponent;
+
+    switch (modalContent) {
+        case 'Add Member':
+            modalContentComponent =
+                <>
+                    <p>Card Members</p>
+                    <div>
+                        {users.map((user, index) => (
+                            <div className="row mb-3" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }} key={index}>
+                                <div className="col-md-1">
+                                    <Avatar>{getUsernameInitials(user.UserName)}</Avatar>
+                                </div>
+                                <div className='col-md-2'>{user.UserName}</div>
+                                <div className="col-md-9 col-12" style={{ display: 'flex', justifyContent: 'space-evenly' }}>
+                                    <span style={{ display: 'block', alignItems: 'center' }}>
+                                        <label htmlFor="">asdasd</label> <input className='ml-2' type="checkbox" name="" id="1" />
+                                    </span>
+                                    <span style={{ display: 'block', alignItems: 'center' }}>
+                                        <label htmlFor="">asdasdas</label><input type="checkbox" name="" id="2" />
+                                    </span>
+                                    <span style={{ display: 'block', alignItems: 'center' }}>
+                                        <label htmlFor="">asdasdasd</label> <input type="checkbox" name="" id="3" />
+                                    </span>
+                                    <span style={{ display: 'block', alignItems: 'center' }}>
+                                        <label htmlFor="">asdasdas</label> <input type="checkbox" name="" id="4" />
+                                    </span>
+                                </div>
+
+                            </div>
+                        ))}
+                    </div>
+                    <hr />
+                    <p>Board Members</p>
+                    <div className='mt-2'>
+                        {users.map((user, index) => (
+                            <div className="row mb-3" style={{ cursor: 'pointer' }} key={index}>
+                                <div className="col-md-1">
+                                    <Avatar>{getUsernameInitials(user.UserName)}</Avatar>
+                                </div>
+                                <div className='col-md-10'>{user.UserName}</div>
+                            </div>
+                        ))}
+                    </div>
+                </>
+            break;
+        case 'Label':
+            modalContentComponent = <div>
+                <p>Label </p>
+                <div className="row">
+                    <div className="col-12 col-md-12">
+                        {['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet'].map((color, index) => (
+                            <div className='d-flex align-items-center p-2' key={index}>
+                                <input type="checkbox" className="me-2" name={`checkbox-${index}`} id={`${index}`} />
+                                <label style={{ height: '5%', width: '80%', backgroundColor: `${color}`, cursor: 'pointer' }} htmlFor={`${index}`}>
+                                    <span className='p-2 text-end'></span>
+                                </label>
+                                <span className='ml-3' style={{ cursor: 'pointer' }}><EditOutlined /></span>
+                            </div>
+                        ))}
+                    </div>
+
+                </div>
+                <div className="row mt-2">
+                    <button className='btn btn-secondary btn-sm bg-secondary' type="button">Save</button>
+                </div>
+            </div>
+            break;
+        case 'Date':
+            modalContentComponent = (
+                <div>
+                    <p> Date content</p>
+                    <DatePicker showTime />
+                    <div className='mt-3'><button type="button" className='btn btn-secondary'>Save</button></div>
+                </div>
+            );
+            break;
+        case 'CheckList':
+            modalContentComponent = <p>This is CheckList content</p>;
+            break;
+        case 'Attachment':
+            modalContentComponent =
+                <div>
+                    <p>Attachment content</p>
+                    <div className='text-center'>
+                        No Img
+                    </div>
+                    <div className='mt-4'>
+                        <input name='Attachment' type="file" />
+                    </div>
+                </div>
+
+            break;
+        default:
+            modalContentComponent = <p>No content available</p>;
+    }
+
+    return (
+        <>
+            <Button type="primary"  onClick={showModal}>
+                Open Modal
+            </Button>
+            <Modal width={780} onOk={()=>{setIsModalOpen(false)}} onCancel={()=>{setIsModalOpen(false)}} title="Basic Modal" open={isModalOpen}>
+                <div className="Container">
+                    <div className="row">
+                        <div className="col-12 col-md-9 pt-3 ">
+                            {/* Title */}
+                            <div className="row" style={{ display: 'flex', alignItems: "center" }}>
+                                <div className="col-1 text-center">
+                                    <SlidersOutlined />
+                                </div>
+                                <div className='col-8'>
+                                    <Input placeholder="Basic usage" />
+                                </div>
+                                <div className='col-3 text-center'>
+                                    <button className='btn btn-secondary btn-sm' type="button">Save</button>
+                                </div>
+                            </div>
+
+                            {/* Below Title */}
+                            <div className="row pt-4 " style={{ display: 'flex', alignItems: "center" }}>
+                                <div className="row">
+                                    <div className="col-12 col-md-4 text-center" >
+                                        <span>Members</span><br />
+                                        <span onClick={() => openModal('Add Member')} style={{ cursor: 'pointer' }} className='pt-2  '>
+                                            <Avatar.Group
+                                                maxCount={2}
+                                                maxStyle={{
+                                                    color: '#f56a00',
+                                                    backgroundColor: 'res',
+                                                }}
+                                            >
+                                                <Avatar src="https://api.dicebear.com/7.x/miniavs/svg?seed=2" />
+                                                <Avatar
+                                                    style={{
+                                                        backgroundColor: 'black',
+                                                    }}
+                                                >
+                                                    K
+                                                </Avatar>
+                                                <Avatar
+                                                    style={{
+                                                        backgroundColor: 'grey',
+                                                    }}
+                                                    M
+                                                />
+                                            </Avatar.Group></span>
+
+                                    </div>
+                                    <div className="col-12 col-md-4">
+                                        <span style={{ display: 'block' }}>Notification</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                <span style={{ marginRight: '8px' }}><EyeOutlined /></span>
+                                                <span style={{ marginRight: '8px' }}>Watching</span>
+                                                <input className="form-check-input" type="checkbox" value="" id="flexCheckIndeterminate" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="col-12 col-md-4">
+                                        <span style={{ display: 'block' }}>DueDate</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                                            <Checkbox style={{ marginRight: '8px' }} />
+                                            <DatePicker showTime />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            {/* Description */}
+                            <div className="row mt-4 " style={{ display: 'flex', alignItems: "center" }}>
+                                <div className="row">
+                                    <div className="col-12 col-md-1">
+                                        <AlignRightOutlined />
+                                    </div>
+                                    <div className="col-12 col-md-11">
+                                        <span>Description</span>
+                                        <textarea style={{ width: '100%', borderRadius: '2%', marginTop: '1%' }} name="" id="" cols="60" rows="4"></textarea>
+                                    </div>
+                                </div>
+                                <div className='col-10'>
+
+                                </div>
+                            </div>
+
+                            {/* Attachment */}
+                            <div className="row pt-3 " style={{ display: 'flex', alignItems: "center" }}>
+                                <div className="row">
+                                    <div className="col-2 col-md-1 text-center">
+                                        <LinkOutlined />
+                                    </div>
+                                    <div className="col-6 col-md-10 ">
+                                        Attachment
+                                    </div>
+                                </div>
+                                <div className="row mt-2">
+                                    <div className="col-12 col-md-1">
+                                    </div>
+                                    <div className="col-12 col-md-11">
+                                        <div class="input-group mb-2">
+                                            <input type="file" class="form-control" id="inputGroupFile02" />
+                                            <label class="input-group-text" for="inputGroupFile02">Upload</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/*Activity  */}
+                            <div className="row pt-3 " style={{ display: 'flex', alignItems: "center" }}>
+                                <div className="row">
+                                    <div className="col-2 col-md-1 text-center">
+                                        <LinkOutlined />
+                                    </div>
+                                    <div className="col-6 col-md-8 ">
+                                        Activity
+                                    </div>
+                                    <div className="col-6 col-md-3 text-end ">
+                                        <button type="button" className='btn btn-secondary btn-sm' onClick={() => setShowActivity(prevState => !prevState)}>{showActivity ? 'Hide Activity': 'Show Details'}</button>
+                                    </div>
+                                </div>
+                                <div className="row mt-3">
+                                    <div className="col-12 col-md-1">
+                                    </div>
+                                    <div className="col-12 col-md-9">
+                                        <div class="input-group mb-3">
+                                            <Input placeholder="Add activity" />
+                                        </div>
+                                    </div>
+                                    <div className="col-4 col-md-2 text-end">
+                                        <button type="button" class="btn btn-secondary btn-sm">Save</button>
+                                    </div>
+                                </div>
+                                { showActivity ? (<div className='mt-4'>
+                                    {users.map((user, index) => (
+                                        <div className="row mb-3" style={{ cursor: 'pointer' }} key={index}>
+                                            <div className="col-md-1">
+                                                <Avatar>{getUsernameInitials(user.UserName)}</Avatar>
+                                            </div>
+                                            <div className='col-md-10'>{user.UserName}</div>
+                                        </div>
+                                    ))}
+                                </div>) : ''}
+                                
+                            </div>
+                        </div>
+
+
+                        <div className='col-12 col-md-3 mt-4'>
+                            <div className="col-12 p-1 mb-3 text-center" style={{ backgroundColor: '#E2E5E5', cursor: 'pointer' }} onClick={() => openModal('Add Member')}>
+                                <span className='p-4'>Add Member</span>
+                            </div>
+                            <div className="col-12 p-1 mb-3 text-center" style={{ backgroundColor: '#E2E5E5', cursor: 'pointer' }} onClick={() => openModal('Label')}>
+                                <span className='p-4'>Label</span>
+                            </div>
+                            <div className="col-12 p-1 mb-3 text-center" style={{ backgroundColor: '#E2E5E5', cursor: 'pointer' }} onClick={() => openModal('Date')}>
+                                <span className='p-4'>Date</span>
+                            </div>
+                            <div className="col-12 p-1 mb-3 text-center" style={{ backgroundColor: '#E2E5E5', cursor: 'pointer' }} onClick={() => openModal('CheckList')}>
+                                <span className='p-4'>CheckList</span>
+                            </div>
+                            <div className="col-12 p-1 mb-3 text-center" style={{ backgroundColor: '#E2E5E5', cursor: 'pointer' }} onClick={() => openModal('Attachment')}>
+                                <span className='p-4'>Attachment</span>
+                            </div>
+
+                            {/* Render modal if showModal is true */}
+                            {showSecondModal &&
+                                <Modal
+                                    title="Modal"
+                                    style={{ top: 200, left: 240, scrollbarWidth: 'thin' }}
+                                    visible={showSecondModal}
+                                    onCancel={() => setSecondShowModal(false)}
+                                    footer={null}
+                                    maskClosable={false}
+                                    width={
+                                        modalContent === 'Add Member' ? 500 :
+                                            modalContent === 'Label' ? 300 :
+                                                modalContent === 'Date' ? 300 :
+                                                    modalContent === 'CheckList' ? 450 :
+                                                        modalContent === 'Attachment' ? 300 : 500
+                                    }
+                                >
+                                    {modalContentComponent}
+                                </Modal>
+
+
+                            }
+                        </div>
+                    </div>
+                </div>
+            </Modal>
+        </>
+    );
+};
+export default ModaComponent;
