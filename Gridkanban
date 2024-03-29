@@ -1,0 +1,1472 @@
+import React, { useContext, useEffect, useState } from "react";
+import { useHistory } from "react-router-dom";
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import { Avatar, Badge, Button, Divider, Modal, TreeSelect } from "antd";
+import { project, tasks } from "../../Apis";
+import AppContext from "../../../../plugin/AppContext";
+import notistack from "../../../../plugin/notistack";
+import ProjectManagementContext from "../../ContextApi/ProjectManagementContext";
+import {
+  CaretDownFilled,
+  CaretRightFilled,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  CloseCircleOutlined,
+  CloseOutlined,
+  CreditCardOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  InfoCircleOutlined,
+  LinkOutlined,
+} from "@ant-design/icons";
+import { PlusOutlined } from "@ant-design/icons";
+import moment from "moment";
+import ModalComponent from "./ModalComponent ";
+import tasklabel from "../../Apis/tasklabel";
+import taskmember from "../../Apis/taskmember";
+
+const TasksGridView = ({ dataToSend }) => {
+  console.log('dataToSend', dataToSend);
+  const history = useHistory();
+  const [taskList, setTaskList] = useState([]);
+  console.log('taskList');
+  const userContext = useContext(AppContext);
+  const projectContext = useContext(ProjectManagementContext);
+  const [showInput, setShowInput] = useState(false);
+  const [newCardName, setNewCardName] = useState("");
+  const [cardStatus, setCardStatus] = useState("");
+  const [taskMembers, setTaskMembers] = useState([]);
+  const [Labels, setLabels] = useState([]);
+  console.log("Labels", Labels);
+  const [newCardDetails, setNewCardDetails] = useState({
+    ProjectId: "",
+    SectionId: "",
+    CustomerId: "",
+  });
+  const [modalVisible, setModalVisible] = useState(false);
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [taskDetails, setTaskDetails] = useState();
+  console.log("taskDetailsfrom Grid view", taskDetails);
+
+  useEffect(() => {
+    getTaskMemebers();
+    GetTaskDetailsBySectionIdandProjectId();
+    GetLabelBySectionId();
+  }, [taskDetails]);
+
+  const dummyData = [
+    {
+      Id: "1",
+      CompanyId: "ABC123",
+      TaskId: "task123",
+      UserId: 1001,
+      AllowChangeStatus: true,
+      AllowLabels: true,
+      AllowDueDates: true,
+      IsWatched: true,
+      AllowAddMembers: false,
+      AllowTaskDetails: true,
+      UserName: "John Doe",
+      ProfileImage: "profile.jpg",
+      ProfileImagePath: "/images/profiles/profile1.jpg",
+      CreatedBy: 2001,
+      CreatedDate: "2024-03-29T09:59:47.677Z",
+      LastModifiedBy: 2001,
+      LastModifiedDate: "2024-03-29T09:59:47.677Z"
+    },
+    {
+      Id: "2",
+      CompanyId: "XYZ789",
+      TaskId: "task456",
+      UserId: 1002,
+      AllowChangeStatus: true,
+      AllowLabels: false,
+      AllowDueDates: true,
+      IsWatched: true,
+      AllowAddMembers: true,
+      AllowTaskDetails: true,
+      UserName: "Jane Smith",
+      ProfileImage: "profile.jpg",
+      ProfileImagePath: "/images/profiles/profile2.jpg",
+      CreatedBy: 2002,
+      CreatedDate: "2024-03-29T10:05:20.123Z",
+      LastModifiedBy: 2002,
+      LastModifiedDate: "2024-03-29T10:05:20.123Z"
+    }
+  ];
+
+
+
+
+
+  const deleteTask = (taskId, ProjectId, SectionId) => {
+    console.log("delete", taskId);
+    tasks
+      .deleteTaskById(taskId)
+      .then((response) => {
+        notistack.success("Task Deleted Successfully!");
+        taskByBySectionId(dataToSend?.SectionId, dataToSend?.ProjectId);
+      })
+      .catch((error) => console.log("Error while delete Task: ", error));
+  };
+
+  const taskByBySectionId = (SectionId, ProjectId) => {
+    tasks
+      .getTasksBySectionId(SectionId, ProjectId)
+      .then((response) => {
+        const newArray = response.map((e) => {
+          return {
+            ...e,
+            TaskId: e.TaskId.toString(),
+          };
+        });
+        setTaskList(newArray);
+      })
+      .catch((error) => console.log("error while gettask: ", error));
+  };
+
+  const GetTaskDetailsBySectionIdandProjectId = () => {
+    tasks
+      .getUserTaskDetailsBySectionId(dataToSend?.SectionId, dataToSend?.ProjectId)
+      .then((res) => {
+        const newArray = res.map((e) => {
+          return {
+            ...e,
+            TaskId: e.TaskId.toString(),
+          };
+        });
+        setTaskList(newArray);
+      })
+      .catch((error)=>{
+        console.log(error?.data?.message);
+      })
+  }
+
+  const onDragEnd = (result) => {
+    if (result) {
+      const newArray = [...taskList];
+      const DragIndex = newArray.findIndex(
+        ({ TaskId }) => TaskId.toString() == result.draggableId
+      );
+      const UpdateDrag = {
+        ...newArray[DragIndex],
+        Status: parseInt(result?.destination?.droppableId),
+      };
+      tasks
+        .updateTask(UpdateDrag.TaskId, UpdateDrag)
+        .then((res) => {
+          taskByBySectionId(dataToSend?.SectionId, dataToSend?.ProjectId);
+          console.log(res);
+        })
+        .catch((error) => {
+          console.log(error?.data?.message);
+        });
+      newArray[DragIndex] = UpdateDrag;
+      setTaskList(newArray);
+    }
+  };
+
+  const addCard = (myStatus) => {
+    const newTask = {
+      TaskTitle: newCardName,
+      Status: myStatus,
+      ProjectId: dataToSend?.ProjectId,
+      SectionId: dataToSend?.SectionId,
+      CustomerId: newCardDetails?.CustomerId,
+    };
+    console.log("newTask", newTask);
+    if (newCardName) {
+      tasks
+        .saveTask(newTask)
+        .then((res) => {
+          notistack.success("Task Created Successfully!");
+          taskByBySectionId(dataToSend?.SectionId, dataToSend?.ProjectId);
+        })
+        .catch((error) => {
+          notistack.error(" Select Project & Section Header");
+        });
+      setNewCardName("");
+      setShowInput(false);
+    } else {
+      notistack.error("Add Task Title");
+    }
+  };
+  const setStatusForCard = (Status) => {
+    setCardStatus(Status);
+  };
+  const getTaskMemebers = (TaskId) => {
+    taskmember
+      .getMembersByTaskById(TaskId)
+      .then((res) => {
+        setTaskMembers(res);
+      })
+      .catch((error) => {
+        console.log(error?.data?.message);
+      });
+  };
+  const getTaskByTaskId = (taskId) => {
+    tasks
+      .getTaskById(taskId)
+      .then((res) => {
+        setTaskDetails(res);
+      })
+      .catch((error) => {
+        console.log(error?.data?.message);
+      });
+  };
+  const GetLabelBySectionId = () => {
+    tasklabel
+      .GetBySectionId(dataToSend?.SectionId)
+      .then((res) => {
+        setLabels(res);
+      })
+      .catch((error) => {
+        console.log(error?.data?.message);
+      });
+  };
+  const handleTaskClick = (taskId) => {
+    toggleModal();
+    getTaskByTaskId(taskId);
+  };
+  const handleEditClick = (e, taskId) => {
+    setIsEditModalVisible(true);
+    getTaskByTaskId(taskId);
+  };
+  const toggleModal = () => {
+    setShowModal(!showModal);
+  };
+  function getUsernameInitials(username) {
+    console.log('username', username);
+    const nameParts = username.split(" ");
+    const firstNameInitial = nameParts[0][0];
+    const lastNameInitial =
+      nameParts.length > 1 ? nameParts[nameParts.length - 1][0] : "";
+    return `${firstNameInitial}${lastNameInitial}`.toUpperCase();
+  }
+
+  return (
+    <>
+      <div className=" row content container-fluid">
+        {/* <Divider type="vertical" /> */}
+        <div className="col-12 col-md-12">
+          <DragDropContext onDragEnd={onDragEnd}>
+            <div className="row ">
+              {/* {/ ==========New========= /} */}
+              <div
+                className="col-sm-6 col-12 col-md-3 mt-3"
+                style={{ position: "relative", paddingBottom: "40px" }}
+              >
+                <Droppable droppableId="0">
+                  {(provided, snapshot) => (
+                    <div
+                      className=""
+                      style={{
+                        backgroundColor: "#f1f2f4",
+                        borderRadius: "10px",
+                        boxShadow: "rgba(0, 0, 0, 0.24) 0px 3px 8px",
+                        padding: "10px",
+                        overflowY: "auto",
+                        minHeight: "400px",
+                        scrollbarWidth: "thin",
+                        scrollbarColor: "#6b7280 #f1f2f4",
+                      }}
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginBottom: "1em",
+                        }}
+                      >
+                        <span style={{ fontWeight: "bold", fontSize: "16px" }}>
+                          New
+                        </span>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                          }}
+                        >
+                          {showInput && cardStatus === "0" ? (
+                            <>
+                              <input
+                                type="text"
+                                value={newCardName}
+                                autoFocus
+                                placeholder="Add a task..."
+                                onChange={(e) => setNewCardName(e.target.value)}
+                                style={{
+                                  width: "100%",
+                                  padding: "8px",
+                                  border: "1px solid #ccc",
+                                  borderRadius: "4px",
+                                  marginRight: "10px",
+                                }}
+                              />
+                              <button
+                                onClick={() => {
+                                  addCard(0);
+                                  setShowInput(false);
+                                }}
+                                style={{
+                                  padding: "10px 15px",
+                                  border: "none",
+                                  borderRadius: "4px",
+                                  backgroundColor: "#008CBA",
+                                  color: "white",
+                                  cursor: "pointer",
+                                  marginRight: "10px",
+                                }}
+                              >
+                                Add
+                              </button>
+                              <button
+                                onClick={() => setShowInput(false)}
+                                style={{
+                                  padding: "10px 15px",
+                                  border: "none",
+                                  borderRadius: "4px",
+                                  backgroundColor: "grey",
+                                  color: "white",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                <CloseCircleOutlined />
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setShowInput(true);
+                                setStatusForCard("0");
+                              }}
+                              style={{
+                                padding: "10px",
+                                border: "none",
+                                backgroundColor: "transparent",
+                                color: "black",
+                                cursor: "pointer",
+                              }}
+                            >
+                              <PlusOutlined />
+                            </button>
+                          )}
+                        </div>
+                      </div>{" "}
+                      <div className="kanban-list kanban-danger custom-width">
+                        <div
+                          className="kanban-wrap"
+                          style={{ maxHeight: "40em", overflowY: "auto" }}
+                        >
+                          {taskList
+                            .filter((item) => item?.Status === 0)
+                            .map((task, index) => (
+                              <Draggable
+                                key={task.TaskId}
+                                draggableId={task.TaskId}
+                                index={index}
+                              >
+                                {(provided, snapshot) => (
+                                  <div
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    {...provided.dragHandleProps}
+                                    className="mb-2 bg-white border rounded 
+                                    p-1 cursor-pointer d-flex flex-column
+                                    overflow-hidden shadow-sm"
+                                  // onMouseEnter={(e) =>
+                                  // (e.currentTarget.style.borderColor =
+                                  //   "#439FE3")
+                                  // }
+                                  // onMouseLeave={(e) =>
+                                  // (e.currentTarget.style.borderColor =
+                                  //   "#ccc")
+                                  // }
+                                  >
+                                    <div
+                                      className="row"
+                                      style={{ display: "flex" }}
+                                    >
+                                      <div
+                                        className="col-12 col-md-10"
+                                        onClick={() =>
+                                          handleTaskClick(task.TaskId)
+                                        }
+                                      >
+                                        <div>
+                                          <span
+                                            style={{
+                                              fontSize: "16px",
+                                              fontWeight: "bold",
+                                            }}
+                                          >
+                                            {task.TaskTitle}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <div className="col-12 col-md-2">
+                                        <div className="kanban-task-action">
+                                          <i
+                                            className="fa fa-pencil"
+                                            style={{
+                                              color: "black",
+                                              fontSize: "13px",
+                                              cursor: "pointer",
+                                            }}
+                                            onClick={(e) => {
+                                              handleEditClick(e, task?.TaskId);
+                                            }}
+                                          />
+                                          <></>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="row">
+                                      <div
+                                        className="col-12 col-md-4"
+                                        style={{ display: "flex" }}
+                                      >
+                                        <ClockCircleOutlined />
+                                        <span
+                                          style={{
+                                            padding: "4%",
+                                            fontSize: "small",
+                                          }}
+                                        >
+                                          {task?.DueDate
+                                            ? moment(task?.DueDate).format(
+                                              "MMM DD"
+                                            )
+                                            : ""}
+                                        </span>
+                                      </div>
+                                      {task?.Description ? (
+                                        <div
+                                          className="col-12 col-md-2"
+                                          data-bs-toggle="tooltip"
+                                          data-bs-placement="bottom"
+                                          title="Description"
+                                          onClick={() =>
+                                            handleTaskClick(task.TaskId)
+                                          }
+                                        >
+                                          <InfoCircleOutlined />
+                                        </div>
+                                      ) : (
+                                        ""
+                                      )}
+                                      {task?.Attachment ? (
+                                        <div
+                                          className="col-12 col-md-2"
+                                          data-bs-toggle="tooltip"
+                                          data-bs-placement="bottom"
+                                          title="Attachments"
+                                          onClick={() =>
+                                            handleTaskClick(task.TaskId)
+                                          }
+                                        >
+                                          <LinkOutlined />
+                                        </div>
+                                      ) : (
+                                        ""
+                                      )}
+                                    </div>
+                                    <div className="row">
+                                      <div className="col-12 col-md-6">
+                                        <div className="d-flex flex-wrap">
+                                          <Avatar.Group maxCount={2} size={'small'}>
+                                            {task?.Labels &&
+                                              JSON.parse(task?.Labels).map((item, index) => {
+                                                const matchingObjects = Labels?.filter((obj) => obj.Id === item);
+                                                const colorInfo = matchingObjects?.map((obj) => ({
+                                                  Name: obj.Name,
+                                                  ColourCode: obj.ColourCode,
+                                                }));
+                                                return (
+                                                  <Badge key={index} style={{ backgroundColor: '#52c41a' }}>
+                                                    <React.Fragment key={index}>
+                                                      {colorInfo &&
+                                                        colorInfo.map(
+                                                          (coloritem, idx) => (
+                                                            <span
+                                                              key={idx}
+                                                              className="badge rounded-pill mr-1 mb-1 mt-1"
+                                                              style={{
+                                                                backgroundColor:
+                                                                  coloritem?.ColourCode,
+                                                                cursor: "pointer",
+                                                                fontSize: "0.7rem",
+                                                                padding:
+                                                                  "0.2rem 0.5rem",
+                                                              }}
+                                                            >
+                                                              {coloritem.Name}
+                                                            </span>
+                                                          )
+                                                        )}
+                                                    </React.Fragment>
+                                                  </Badge>
+                                                );
+                                              })}
+                                          </Avatar.Group>
+                                        </div>
+                                      </div>
+                                      <div className="col-12 col-md-6 d-flex justify-content-center">
+                                        <Avatar.Group maxCount={2} maxStyle={{ color: "white", backgroundColor: "black" }}>
+                                          {dummyData && dummyData?.map((profile, index) => (
+                                            <Avatar
+                                              key={index}
+                                              style={{ backgroundColor: "#F5F051", color: 'black' }}
+                                              size="small"
+                                            >
+                                              {getUsernameInitials(profile?.UserName)}
+                                              {console.log('UserName', profile?.UserName)}
+                                            </Avatar>
+                                          ))}
+                                        </Avatar.Group>
+                                      </div>
+
+                                    </div>
+                                  </div>
+                                )}
+                              </Draggable>
+                            ))}
+                          {provided.placeholder}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </Droppable>
+              </div>
+              {/* {/ ==========InProgress========= /} */}
+              <div className="col-sm-6 col-12 col-md-3 mt-3 " style={{}}>
+                <Droppable droppableId="1">
+                  {(provided, snapshot) => (
+                    <div
+                      className=""
+                      style={{
+                        backgroundColor: "#f1f2f4",
+                        borderRadius: "10px",
+                        boxShadow: "rgba(0, 0, 0, 0.24) 0px 3px 8px",
+                        padding: "10px",
+                        overflowY: "auto",
+                        minHeight: "400px",
+                        scrollbarWidth: "thin",
+                        scrollbarColor: "#6b7280 #f1f2f4",
+                      }}
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginBottom: "1em",
+                        }}
+                      >
+                        <span style={{ fontWeight: "bold", fontSize: "16px" }}>
+                          InProgress
+                        </span>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                          }}
+                        >
+                          {showInput && cardStatus === "1" ? (
+                            <>
+                              <input
+                                type="text"
+                                value={newCardName}
+                                autoFocus
+                                placeholder="Add a task..."
+                                onChange={(e) => setNewCardName(e.target.value)}
+                                style={{
+                                  width: "100%",
+                                  padding: "8px",
+                                  border: "1px solid #ccc",
+                                  borderRadius: "4px",
+                                  marginRight: "10px",
+                                }}
+                              />
+                              <button
+                                onClick={() => {
+                                  addCard(1);
+                                  setShowInput(false);
+                                }}
+                                style={{
+                                  padding: "10px 15px",
+                                  border: "none",
+                                  borderRadius: "4px",
+                                  backgroundColor: "#008CBA",
+                                  color: "white",
+                                  cursor: "pointer",
+                                  marginRight: "10px",
+                                }}
+                              >
+                                Add
+                              </button>
+                              <button
+                                onClick={() => setShowInput(false)}
+                                style={{
+                                  padding: "10px 15px",
+                                  border: "none",
+                                  borderRadius: "4px",
+                                  backgroundColor: "grey",
+                                  color: "white",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                <CloseCircleOutlined />
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setShowInput(true);
+                                setStatusForCard("1");
+                              }}
+                              style={{
+                                padding: "10px",
+                                border: "none",
+                                backgroundColor: "transparent",
+                                color: "black",
+                                cursor: "pointer",
+                              }}
+                            >
+                              <PlusOutlined />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <div className="kanban-list kanban-danger custom-width">
+                        <div
+                          className="kanban-wrap"
+                          style={{ maxHeight: "40em", overflowY: "auto" }}
+                        >
+                          {taskList
+                            .filter((item) => item?.Status === 1)
+                            .map((task, index) => (
+                              <Draggable
+                                key={task.TaskId}
+                                draggableId={task.TaskId}
+                                index={index}
+                              >
+                                {(provided, snapshot) => (
+                                  <div
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    {...provided.dragHandleProps}
+                                    className="mb-2 bg-white border rounded 
+                                    p-1 cursor-pointer d-flex flex-column
+                                    overflow-hidden shadow-sm"
+                                  // onMouseEnter={(e) =>
+                                  // (e.currentTarget.style.borderColor =
+                                  //   "#439FE3")
+                                  // }
+                                  // onMouseLeave={(e) =>
+                                  // (e.currentTarget.style.borderColor =
+                                  //   "#ccc")
+                                  // }
+                                  >
+                                    <div
+                                      className="row"
+                                      style={{ display: "flex" }}
+                                    >
+                                      <div
+                                        className="col-12 col-md-10"
+                                        onClick={() =>
+                                          handleTaskClick(task.TaskId)
+                                        }
+                                      >
+                                        <div>
+                                          <span
+                                            style={{
+                                              fontSize: "16px",
+                                              fontWeight: "bold",
+                                            }}
+                                          >
+                                            {task.TaskTitle}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <div className="col-12 col-md-2">
+                                        <div className="kanban-task-action">
+                                          <i
+                                            className="fa fa-pencil"
+                                            style={{
+                                              color: "black",
+                                              fontSize: "13px",
+                                              cursor: "pointer",
+                                            }}
+                                            onClick={(e) => {
+                                              handleEditClick(e, task?.TaskId);
+                                            }}
+                                          />
+                                          <></>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="row">
+                                      <div
+                                        className="col-12 col-md-6"
+                                        style={{ display: "flex" }}
+                                      >
+                                        <ClockCircleOutlined />
+                                        <span
+                                          style={{
+                                            padding: "4%",
+                                            fontSize: "small",
+                                          }}
+                                        >
+                                          {task?.DueDate
+                                            ? moment(task?.DueDate).format(
+                                              "MMM DD"
+                                            )
+                                            : ""}
+                                        </span>
+                                      </div>
+                                      {task?.Description ? (
+                                        <div
+                                          className="col-12 col-md-2"
+                                          data-bs-toggle="tooltip"
+                                          data-bs-placement="bottom"
+                                          title="Description added "
+                                          onClick={() =>
+                                            handleTaskClick(task.TaskId)
+                                          }
+                                        >
+                                          <InfoCircleOutlined />
+                                        </div>
+                                      ) : (
+                                        ""
+                                      )}
+                                      {task?.Attachment ? (
+                                        <div
+                                          className="col-12 col-md-2"
+                                          data-bs-toggle="tooltip"
+                                          data-bs-placement="bottom"
+                                          title="Attachments"
+                                          onClick={() =>
+                                            handleTaskClick(task.TaskId)
+                                          }
+                                        >
+                                          <LinkOutlined />
+                                        </div>
+                                      ) : (
+                                        ""
+                                      )}
+                                      {
+                                      }
+                                    </div>
+                                    <div className="row">
+                                      <div className="col-12 col-md-6">
+                                        <div className="d-flex flex-wrap">
+                                          <Avatar.Group maxCount={2} size={'small'}>
+                                            {task?.Labels &&
+                                              JSON.parse(task?.Labels).map((item, index) => {
+                                                const matchingObjects = Labels?.filter((obj) => obj.Id === item);
+                                                const colorInfo = matchingObjects?.map((obj) => ({
+                                                  Name: obj.Name,
+                                                  ColourCode: obj.ColourCode,
+                                                }));
+                                                return (
+                                                  <Badge key={index} style={{ backgroundColor: '#52c41a' }}>
+                                                    <React.Fragment key={index}>
+                                                      {colorInfo &&
+                                                        colorInfo.map(
+                                                          (coloritem, idx) => (
+                                                            <span
+                                                              key={idx}
+                                                              className="badge rounded-pill mr-1 mb-1 mt-1"
+                                                              style={{
+                                                                backgroundColor:
+                                                                  coloritem?.ColourCode,
+                                                                cursor: "pointer",
+                                                                fontSize: "0.7rem",
+                                                                padding:
+                                                                  "0.2rem 0.5rem",
+                                                              }}
+                                                            >
+                                                              {coloritem.Name}
+                                                            </span>
+                                                          )
+                                                        )}
+                                                    </React.Fragment>
+                                                  </Badge>
+                                                );
+                                              })}
+                                          </Avatar.Group>
+                                        </div>
+                                      </div>
+                                      <div className="col-12 col-md-6 d-flex justify-content-center">
+                                        <Avatar.Group maxCount={2} maxStyle={{ color: "white", backgroundColor: "black" }}>
+                                          {dummyData?.map((profile, index) => (
+                                            <Avatar
+                                              key={index}
+                                              style={{ backgroundColor: "#F5F051", color: 'black' }}
+                                              size="small"
+                                            >
+                                              {getUsernameInitials(profile?.UserName)}
+                                              {console.log('UserName', profile?.UserName)}
+                                            </Avatar>
+                                          ))}
+                                        </Avatar.Group>
+                                      </div>
+                                    </div>
+
+                                  </div>
+                                )}
+                              </Draggable>
+                            ))}
+                          {provided.placeholder}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </Droppable>
+              </div>
+              {/* {/ ==========Review========= /} */}
+              <div className="col-sm-6 col-12 col-md-3 mt-3 " style={{}}>
+                <Droppable droppableId="2">
+                  {(provided, snapshot) => (
+                    <div
+                      className=""
+                      style={{
+                        backgroundColor: "#f1f2f4",
+                        borderRadius: "10px",
+                        boxShadow: "rgba(0, 0, 0, 0.24) 0px 3px 8px",
+                        padding: "10px",
+                        overflowY: "auto",
+                        minHeight: "400px",
+                        scrollbarWidth: "thin",
+                        scrollbarColor: "#6b7280 #f1f2f4",
+                      }}
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginBottom: "1em",
+                        }}
+                      >
+                        <span style={{ fontWeight: "bold", fontSize: "16px" }}>
+                          Review
+                        </span>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                          }}
+                        >
+                          {showInput && cardStatus === "2" ? (
+                            <>
+                              <input
+                                type="text"
+                                value={newCardName}
+                                autoFocus
+                                placeholder="Add a task..."
+                                onChange={(e) => setNewCardName(e.target.value)}
+                                style={{
+                                  width: "100%",
+                                  padding: "8px",
+                                  border: "1px solid #ccc",
+                                  borderRadius: "4px",
+                                  marginRight: "10px",
+                                }}
+                              />
+                              <button
+                                onClick={() => {
+                                  addCard(2);
+                                  setShowInput(false);
+                                }}
+                                style={{
+                                  padding: "10px 15px",
+                                  border: "none",
+                                  borderRadius: "4px",
+                                  backgroundColor: "#008CBA",
+                                  color: "white",
+                                  cursor: "pointer",
+                                  marginRight: "10px",
+                                }}
+                              >
+                                Add
+                              </button>
+                              <button
+                                onClick={() => setShowInput(false)}
+                                style={{
+                                  padding: "10px 15px",
+                                  border: "none",
+                                  borderRadius: "4px",
+                                  backgroundColor: "grey",
+                                  color: "white",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                <CloseCircleOutlined />
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setShowInput(true);
+                                setStatusForCard("2");
+                              }}
+                              style={{
+                                padding: "10px",
+                                border: "none",
+                                backgroundColor: "transparent",
+                                color: "black",
+                                cursor: "pointer",
+                              }}
+                            >
+                              <PlusOutlined />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <div className="kanban-list kanban-danger custom-width">
+                        <div
+                          className="kanban-wrap"
+                          style={{ maxHeight: "40em", overflowY: "auto" }}
+                        >
+                          {taskList
+                            .filter((item) => item?.Status === 2)
+                            .map((task, index) => (
+                              <Draggable
+                                key={task.TaskId}
+                                draggableId={task.TaskId}
+                                index={index}
+                              >
+                                {(provided, snapshot) => (
+                                  <div
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    {...provided.dragHandleProps}
+                                    className="mb-2 bg-white border rounded 
+                                    p-1 cursor-pointer d-flex flex-column
+                                    overflow-hidden shadow-sm"
+                                  // onMouseEnter={(e) =>
+                                  // (e.currentTarget.style.borderColor =
+                                  //   "#439FE3")
+                                  // }
+                                  // onMouseLeave={(e) =>
+                                  // (e.currentTarget.style.borderColor =
+                                  //   "#ccc")
+                                  // }
+                                  >
+                                    <div
+                                      className="row"
+                                      style={{ display: "flex" }}
+                                    >
+                                      <div
+                                        className="col-12 col-md-10"
+                                        onClick={() =>
+                                          handleTaskClick(task.TaskId)
+                                        }
+                                      >
+                                        <div>
+                                          <span
+                                            style={{
+                                              fontSize: "16px",
+                                              fontWeight: "bold",
+                                            }}
+                                          >
+                                            {task.TaskTitle}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <div className="col-12 col-md-2">
+                                        <div className="kanban-task-action">
+                                          <i
+                                            className="fa fa-pencil"
+                                            style={{
+                                              color: "black",
+                                              fontSize: "13px",
+                                              cursor: "pointer",
+                                            }}
+                                            onClick={(e) => {
+                                              handleEditClick(e, task?.TaskId);
+                                            }}
+                                          />
+                                          <></>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="row">
+                                      <div
+                                        className="col-12 col-md-6"
+                                        style={{ display: "flex" }}
+                                      >
+                                        <ClockCircleOutlined />
+                                        <span
+                                          style={{
+                                            padding: "4%",
+                                            fontSize: "small",
+                                          }}
+                                        >
+                                          {task?.DueDate
+                                            ? moment(task?.DueDate).format(
+                                              "MMM DD"
+                                            )
+                                            : ""}
+                                        </span>
+                                      </div>
+                                      {task?.Description ? (
+                                        <div
+                                          className="col-12 col-md-2"
+                                          data-bs-toggle="tooltip"
+                                          data-bs-placement="bottom"
+                                          title="Description"
+                                          onClick={() =>
+                                            handleTaskClick(task.TaskId)
+                                          }
+                                        >
+                                          <InfoCircleOutlined />
+                                        </div>
+                                      ) : (
+                                        ""
+                                      )}
+                                      {task?.Attachment ? (
+                                        <div
+                                          className="col-12 col-md-2"
+                                          data-bs-toggle="tooltip"
+                                          data-bs-placement="bottom"
+                                          title="Attachments"
+                                          onClick={() =>
+                                            handleTaskClick(task.TaskId)
+                                          }
+                                        >
+                                          <LinkOutlined />
+                                        </div>
+                                      ) : (
+                                        ""
+                                      )}
+                                    </div>
+                                    <div className="row">
+                                      <div className="col-12 col-md-6">
+                                        <div className="d-flex flex-wrap">
+                                          <Avatar.Group maxCount={2} size={'small'}>
+                                            {task?.Labels &&
+                                              JSON.parse(task?.Labels).map((item, index) => {
+                                                const matchingObjects = Labels?.filter((obj) => obj.Id === item);
+                                                const colorInfo = matchingObjects?.map((obj) => ({
+                                                  Name: obj.Name,
+                                                  ColourCode: obj.ColourCode,
+                                                }));
+                                                return (
+                                                  <Badge key={index} style={{ backgroundColor: '#52c41a' }}>
+                                                    <React.Fragment key={index}>
+                                                      {colorInfo &&
+                                                        colorInfo.map(
+                                                          (coloritem, idx) => (
+                                                            <span
+                                                              key={idx}
+                                                              className="badge rounded-pill mr-1 mb-1 mt-1"
+                                                              style={{
+                                                                backgroundColor:
+                                                                  coloritem?.ColourCode,
+                                                                cursor: "pointer",
+                                                                fontSize: "0.7rem",
+                                                                padding:
+                                                                  "0.2rem 0.5rem",
+                                                              }}
+                                                            >
+                                                              {coloritem.Name}
+                                                            </span>
+                                                          )
+                                                        )}
+                                                    </React.Fragment>
+                                                  </Badge>
+                                                );
+                                              })}
+                                          </Avatar.Group>
+                                        </div>
+                                      </div>
+                                      <div className="col-12 col-md-6 d-flex justify-content-center">
+                                        <Avatar.Group maxCount={2} maxStyle={{ color: "white", backgroundColor: "black" }}>
+                                          {dummyData?.map((profile, index) => (
+                                            <Avatar
+                                              key={index}
+                                              style={{ backgroundColor: "#F5F051", color: 'black' }}
+                                              size="small"
+                                            >
+                                              {getUsernameInitials(profile?.UserName)}
+                                              {console.log('UserName', profile?.UserName)}
+                                            </Avatar>
+                                          ))}
+                                        </Avatar.Group>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </Draggable>
+                            ))}
+                          {provided.placeholder}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </Droppable>
+              </div>
+              {/* {/ ==========Complete========= /} */}
+              <div className="col-sm-6 col-12 col-md-3 mt-3" style={{}}>
+                <Droppable droppableId="3">
+                  {(provided, snapshot) => (
+                    <div
+                      className=""
+                      style={{
+                        backgroundColor: "#f1f2f4",
+                        borderRadius: "10px",
+                        boxShadow: "rgba(0, 0, 0, 0.24) 0px 3px 8px",
+                        padding: "10px",
+                        minHeight: "400px",
+                        overflowY: "auto",
+                        scrollbarWidth: "thin",
+                        scrollbarColor: "#6b7280 #f1f2f4",
+                      }}
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginBottom: "1em",
+                        }}
+                      >
+                        <span style={{ fontWeight: "bold", fontSize: "16px" }}>
+                          Complete
+                        </span>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                          }}
+                        >
+                          {showInput && cardStatus === "3" ? (
+                            <>
+                              <input
+                                type="text"
+                                value={newCardName}
+                                autoFocus
+                                placeholder="Add a task..."
+                                onChange={(e) => setNewCardName(e.target.value)}
+                                style={{
+                                  width: "100%",
+                                  padding: "8px",
+                                  border: "1px solid #ccc",
+                                  borderRadius: "4px",
+                                  marginRight: "10px",
+                                }}
+                              />
+                              <button
+                                onClick={() => {
+                                  addCard(3);
+                                  setShowInput(false);
+                                }}
+                                style={{
+                                  padding: "10px 15px",
+                                  border: "none",
+                                  borderRadius: "4px",
+                                  backgroundColor: "#008CBA",
+                                  color: "white",
+                                  cursor: "pointer",
+                                  marginRight: "10px",
+                                }}
+                              >
+                                Add
+                              </button>
+                              <button
+                                onClick={() => setShowInput(false)}
+                                style={{
+                                  padding: "10px 15px",
+                                  border: "none",
+                                  borderRadius: "4px",
+                                  backgroundColor: "grey",
+                                  color: "white",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                <CloseCircleOutlined />
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setShowInput(true);
+                                setStatusForCard("3");
+                              }}
+                              style={{
+                                padding: "10px",
+                                border: "none",
+                                backgroundColor: "transparent",
+                                color: "black",
+                                cursor: "pointer",
+                              }}
+                            >
+                              <PlusOutlined />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <div className="kanban-list kanban-danger custom-width">
+                        <div
+                          className="kanban-wrap"
+                          style={{ maxHeight: "40em", overflowY: "auto" }}
+                        >
+                          {taskList
+                            ?.filter((item) => item?.Status === 3)
+                            ?.map((task, index) => (
+                              <Draggable
+                                key={task.TaskId}
+                                draggableId={task.TaskId}
+                                index={index}
+                              >
+                                {(provided, snapshot) => (
+                                  <div
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    {...provided.dragHandleProps}
+                                    className="mb-2 bg-white border rounded 
+                                    p-1 cursor-pointer d-flex flex-column
+                                    overflow-hidden shadow-sm"
+                                    onMouseEnter={(e) =>
+                                    (e.currentTarget.style.borderColor =
+                                      "#439FE3")
+                                    }
+                                    onMouseLeave={(e) =>
+                                    (e.currentTarget.style.borderColor =
+                                      "#ccc")
+                                    }
+                                  >
+                                    <div
+                                      className="row"
+                                      style={{ display: "flex" }}
+                                    >
+                                      <div
+                                        className="col-12 col-md-10"
+                                        onClick={() =>
+                                          handleTaskClick(task?.TaskId)
+                                        }
+                                      >
+                                        <div>
+                                          <span
+                                            style={{
+                                              fontSize: "16px",
+                                              fontWeight: "bold",
+                                            }}
+                                          >
+                                            {task?.TaskTitle}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <div className="col-12 col-md-2">
+                                        <div className="kanban-task-action">
+                                          <i
+                                            className="fa fa-pencil"
+                                            style={{
+                                              color: "black",
+                                              fontSize: "13px",
+                                              cursor: "pointer",
+                                            }}
+                                            onClick={(e) => {
+                                              handleEditClick(e, task?.TaskId);
+                                            }}
+                                          />
+                                          <></>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="row">
+                                      <div
+                                        className="col-12 col-md-6"
+                                        style={{ display: "flex" }}
+                                      >
+                                        <ClockCircleOutlined />
+                                        <span
+                                          style={{
+                                            padding: "4%",
+                                            fontSize: "small",
+                                          }}
+                                        >
+                                          {task?.DueDate
+                                            ? moment(task?.DueDate).format(
+                                              "MMM DD"
+                                            )
+                                            : ""}
+                                        </span>
+                                      </div>
+                                      {task?.Description ? (
+                                        <div
+                                          className="col-12 col-md-2"
+                                          data-bs-toggle="tooltip"
+                                          data-bs-placement="bottom"
+                                          title="Description"
+                                          onClick={() =>
+                                            handleTaskClick(task.TaskId)
+                                          }
+                                        >
+                                          <InfoCircleOutlined />
+                                        </div>
+                                      ) : (
+                                        ""
+                                      )}
+                                      {task?.Attachment ? (
+                                        <div
+                                          className="col-12 col-md-2"
+                                          data-bs-toggle="tooltip"
+                                          data-bs-placement="bottom"
+                                          title="Attachments"
+                                          onClick={() =>
+                                            handleTaskClick(task.TaskId)
+                                          }
+                                        >
+                                          <LinkOutlined />
+                                        </div>
+                                      ) : (
+                                        ""
+                                      )}
+                                    </div>
+                                    <div className="row">
+                                      <div className="col-12 col-md-6">
+                                        <div className="d-flex flex-wrap">
+                                          <Avatar.Group maxCount={2} size={'small'}>
+                                            {task?.Labels &&
+                                              JSON.parse(task?.Labels).map((item, index) => {
+                                                const matchingObjects = Labels?.filter((obj) => obj.Id === item);
+                                                const colorInfo = matchingObjects?.map((obj) => ({
+                                                  Name: obj.Name,
+                                                  ColourCode: obj.ColourCode,
+                                                }));
+                                                return (
+                                                  <Badge key={index} style={{ backgroundColor: '#52c41a' }}>
+                                                    <React.Fragment key={index}>
+                                                      {colorInfo &&
+                                                        colorInfo.map(
+                                                          (coloritem, idx) => (
+                                                            <span
+                                                              key={idx}
+                                                              className="badge rounded-pill mr-1 mb-1 mt-1"
+                                                              style={{
+                                                                backgroundColor:
+                                                                  coloritem?.ColourCode,
+                                                                cursor: "pointer",
+                                                                fontSize: "0.7rem",
+                                                                padding:
+                                                                  "0.2rem 0.5rem",
+                                                              }}
+                                                            >
+                                                              {coloritem.Name}
+                                                            </span>
+                                                          )
+                                                        )}
+                                                    </React.Fragment>
+                                                  </Badge>
+                                                );
+                                              })}
+                                          </Avatar.Group>
+                                        </div>
+                                      </div>
+                                      <div className="col-12 col-md-6 d-flex justify-content-center">
+                                        <Avatar.Group maxCount={2} maxStyle={{ color: "white", backgroundColor: "black" }}>
+                                          {dummyData?.map((profile, index) => (
+                                            <Avatar
+                                              key={index}
+                                              style={{ backgroundColor: "#F5F051", color: 'black' }}
+                                              size="small"
+                                            >
+                                              {getUsernameInitials(profile?.UserName)}
+                                              {console.log('UserName', profile?.UserName)}
+                                            </Avatar>
+                                          ))}
+                                        </Avatar.Group>
+                                      </div>
+
+                                    </div>
+                                  </div>
+                                )}
+                              </Draggable>
+                            ))}
+                          {provided.placeholder}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </Droppable>
+              </div>
+            </div>
+          </DragDropContext>
+        </div>
+
+        {/* Edit */}
+        <Modal
+          title="Edit Task"
+          visible={isEditModalVisible}
+          onCancel={() => setIsEditModalVisible(false)}
+          footer={null}
+          style={{
+            borderRadius: "8px",
+            width: "300px",
+            padding: "20px",
+          }}
+        >
+          <div>
+            <div className="col-12">Task title : {taskDetails?.TaskTitle}</div>
+            <div className="col-12">
+              <Button
+                variant="outline-primary"
+                className="dropdown-item w-100"
+                onClick={() => {
+                  setIsEditModalVisible(false);
+                  history.push({
+                    pathname: "Add-New-Task",
+                    state: {
+                      TaskId: taskDetails?.TaskId,
+                    },
+                  });
+                }}
+              >
+                <EditOutlined /> Edit
+              </Button>
+              <Button
+                variant="outline-danger"
+                className="dropdown-item w-100"
+                onClick={() => {
+                  setIsEditModalVisible(false);
+                  deleteTask(
+                    taskDetails?.TaskId,
+                    taskDetails?.ProjectId,
+                    taskDetails?.SectionId
+                  );
+                }}
+              >
+                <DeleteOutlined /> Delete
+              </Button>
+            </div>
+          </div>
+        </Modal>
+
+        {showModal && (
+          <ModalComponent
+            onClose={toggleModal}
+            taskDetails={taskDetails}
+            setTaskDetails={setTaskDetails}
+          />
+        )}
+      </div>
+      {/* {/ </div> /} */}
+    </>
+  );
+};
+
+export default TasksGridView;
