@@ -1,0 +1,1391 @@
+import React, { useEffect, useState, useRef } from "react";
+import {
+    Avatar,
+    Button,
+    Cascader,
+    Checkbox,
+    DatePicker,
+    Input,
+    Modal,
+    Tooltip,
+} from "antd";
+import {
+    FieldTimeOutlined,
+    CheckCircleOutlined,
+    CheckOutlined,
+    LinkOutlined,
+    UnorderedListOutlined,
+    ProfileOutlined,
+    FileTextOutlined,
+} from "@ant-design/icons";
+import { DeleteOutlined } from "@ant-design/icons";
+import { EyeOutlined } from "@ant-design/icons";
+import { projectresourcemain, tasks } from "../../Apis";
+import { CKEditor } from "@ckeditor/ckeditor5-react";
+import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
+import taskmember from "../../Apis/taskmember";
+import notistack from "../../../../plugin/notistack";
+import taskactivity from "../../Apis/taskactivity";
+import moment from "moment";
+import tasklabel from "../../Apis/tasklabel";
+import Zoom from 'react-medium-image-zoom'
+import './../../../../../node_modules/react-medium-image-zoom/dist/styles.css'
+
+const ModaComponent = ({ onClose, taskDetails, setTaskDetails }) => {
+    console.log("taskDetails", taskDetails);
+    const [showSecondModal, setSecondShowModal] = useState(false);
+    // console.log('showSecondModal', showSecondModal);
+    const [modalContent, setModalContent] = useState("");
+    const [showActivity, setShowActivity] = useState(false);
+    const [taskMembers, setTaskMembers] = useState([]);
+    const [projectMembers, setProjectMembers] = useState([]);
+    const [activityContent, setActivityContent] = useState("");
+    const [editing, setEditing] = useState(false);
+    const [editingTitle, setEditingTitle] = useState(false);
+    const [editorContent, setEditorContent] = useState("");
+    const [teamMemberDetails, setTeamMemberDetails] = useState();
+    console.log("teamMemberDetails : ", teamMemberDetails);
+    const [selectedDueDate, setSelectedDueDate] = useState(taskDetails?.DueDate);
+    const [createNewColor, setCreateNewColor] = useState(false);
+    const [Labels, setLabels] = useState([]);
+    const [taskLables, setTaskLables] = useState([]);
+    const [taskActivity, setTaskActivity] = useState([]);
+    const [isZoomed, setIsZoomed] = useState(false);
+
+    const status = [
+        { id: 0, name: 'InProgress', backgroundColor: 'orange', icon: <FieldTimeOutlined /> },
+        { id: 1, name: 'Completed', backgroundColor: 'forestgreen', icon: <CheckCircleOutlined /> }
+    ];
+
+    const getStatusName = (statusId, dueDate) => {
+        if (statusId === 0 && moment(dueDate).isBefore(moment(), 'day')) {
+            return { name: 'Overdue', icon: <FieldTimeOutlined /> };
+        } else {
+            const foundStatus = status.find(item => item.id === statusId);
+            return foundStatus ? { name: foundStatus.name, icon: foundStatus.icon } : { name: 'Unknown', icon: null };
+        }
+    };
+    const getStatusColor = (statusId, dueDate) => {
+        if (statusId === 0 && moment(dueDate).isBefore(moment(), 'day')) {
+            return 'red';
+        } else {
+            const foundStatus = status.find(item => item.id === statusId);
+            return foundStatus ? foundStatus.backgroundColor : 'light gray';
+        }
+    };
+
+    const handleZoomChange = (zoomed) => {
+        setIsZoomed(zoomed);
+    };
+
+    const [newcolor, setNewcolor] = useState({
+        SectionId: "",
+        ColourCode: "",
+        Name: "",
+    });
+
+    const options = [
+        {
+            value: "red",
+            label: (
+                <div
+                    style={{
+                        backgroundColor: "red",
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "10px",
+                        display: "inline-block",
+                        cursor: "pointer",
+                        marginTop: "6px",
+                    }}
+                ></div>
+            ),
+        },
+        {
+            value: "green",
+            label: (
+                <div
+                    style={{
+                        backgroundColor: "green",
+                        width: "20px",
+                        height: "20px",
+                        display: "inline-block",
+                        borderRadius: "10px",
+                        cursor: "pointer",
+                        marginTop: "6px",
+                    }}
+                ></div>
+            ),
+        },
+        {
+            value: "yellow",
+            label: (
+                <div
+                    style={{
+                        backgroundColor: "yellow",
+                        width: "20px",
+                        height: "20px",
+                        display: "inline-block",
+                        borderRadius: "10px",
+                        cursor: "pointer",
+                        marginTop: "6px",
+                    }}
+                ></div>
+            ),
+        },
+        {
+            value: "orange",
+            label: (
+                <div
+                    style={{
+                        backgroundColor: "orange",
+                        width: "20px",
+                        height: "20px",
+                        display: "inline-block",
+                        borderRadius: "10px",
+                        cursor: "pointer",
+                        marginTop: "6px",
+                    }}
+                ></div>
+            ),
+        },
+        {
+            value: "pink",
+            label: (
+                <div
+                    style={{
+                        backgroundColor: "pink",
+                        width: "20px",
+                        height: "20px",
+                        display: "inline-block",
+                        borderRadius: "10px",
+                        cursor: "pointer",
+                        marginTop: "6px",
+                    }}
+                ></div>
+            ),
+        },
+        {
+            value: "purple",
+            label: (
+                <div
+                    style={{
+                        backgroundColor: "purple",
+                        width: "20px",
+                        height: "20px",
+                        display: "inline-block",
+                        borderRadius: "10px",
+                        cursor: "pointer",
+                        marginTop: "6px",
+                    }}
+                ></div>
+            ),
+        },
+        {
+            value: "blue",
+            label: (
+                <div
+                    style={{
+                        backgroundColor: "blue",
+                        width: "20px",
+                        height: "20px",
+                        display: "inline-block",
+                        borderRadius: "10px",
+                        cursor: "pointer",
+                        marginTop: "6px",
+                    }}
+                ></div>
+            ),
+        },
+        {
+            value: "cyan",
+            label: (
+                <div
+                    style={{
+                        backgroundColor: "cyan",
+                        width: "20px",
+                        height: "20px",
+                        display: "inline-block",
+                        borderRadius: "10px",
+                        cursor: "pointer",
+                        marginTop: "6px",
+                    }}
+                ></div>
+            ),
+        },
+        {
+            value: "limegreen",
+            label: (
+                <div
+                    style={{
+                        backgroundColor: "limegreen",
+                        width: "20px",
+                        height: "20px",
+                        display: "inline-block",
+                        borderRadius: "10px",
+                        cursor: "pointer",
+                        marginTop: "6px",
+                    }}
+                ></div>
+            ),
+        },
+        {
+            value: "blueviolet",
+            label: (
+                <div
+                    style={{
+                        backgroundColor: "blueviolet",
+                        width: "20px",
+                        height: "20px",
+                        display: "inline-block",
+                        borderRadius: "10px",
+                        cursor: "pointer",
+                        marginTop: "6px",
+                    }}
+                ></div>
+            ),
+        },
+    ];
+
+    let modalContentComponent;
+    switch (modalContent) {
+        case "Add Member":
+            modalContentComponent = (
+                <>
+                    <h4>Card Members</h4>
+                    <div>
+                        {taskMembers?.map((user, index) => (
+                            <div
+                                className="row mb-3 py-1 px-2 d-flex align-items-center kanban-card-other-btn"
+                                style={{ cursor: "pointer" }}
+                                key={index}
+                            >
+                                <div className="col-md-1">
+                                    <Avatar
+                                        key={index}
+                                        // src={profile.profilePath}
+                                        style={{ backgroundColor: "#F5F051", color: "black" }}
+                                    >
+                                        {getUsernameInitials(user?.UserName)}
+                                    </Avatar>
+                                </div>
+                                <div
+                                    className="col-md-4"
+                                    onClick={() => {
+                                        handleDeleteTaskMember(user?.Id);
+                                    }}
+                                >
+                                    <h5>{user.UserName}</h5>
+                                </div>
+                                <div
+                                    className="col-md-7 row px-2 "
+                                    style={{ display: "flex", justifyContent: "space-evenly" }}
+                                >
+                                    <div className="col-6">
+                                        <span className="d-flex justify-content-start ">
+                                            <input checked={user?.AllowChangeStatus} className="mx-2" type="checkbox" name="AllowChangeStatus" id="1" onChange={() => handleMemberCheckboxChange(user, "AllowChangeStatus")} />
+                                            <label htmlFor="">AllowChangeStatus</label>
+                                        </span>
+                                    </div>
+                                    <div className="col-6">
+                                        <span className="d-flex justify-content-start ">
+                                            <input checked={user?.AllowLabels} className="mx-2" type="checkbox" name="AllowLabels" id="2" onChange={() => handleMemberCheckboxChange(user, "AllowLabels")} />
+                                            <label htmlFor="">AllowLabels</label>
+                                        </span>
+                                    </div>
+                                    <div className="col-6">
+                                        <span className="d-flex justify-content-start">
+                                            <input checked={user?.AllowDueDates} className="mx-2" type="checkbox" name="AllowDueDates" id="1" onChange={() => handleMemberCheckboxChange(user, "AllowDueDates")} />
+                                            <label htmlFor="">AllowDueDates</label>
+                                        </span>
+                                    </div>
+                                    <div className="col-6">
+                                        <span className="d-flex justify-content-start">
+                                            <input checked={user?.IsWatched} className="mx-2" type="checkbox" name="IsWatched" id="3" onChange={() => handleMemberCheckboxChange(user, "IsWatched")} />
+                                            <label htmlFor="">IsWatched</label>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <hr />
+                    <h4>Board Members</h4>
+                    <div className="mt-3">
+                        {/* {projectMembers?.map((user, index) => (
+                            <div
+                                className="row mb-3"
+                                style={{ cursor: "pointer" }}
+                                onClick={() => {
+                                    saveTaskMember(user?.UserId);
+                                }}
+                                key={index}
+                            >
+                                <div className="col-md-1">
+                                    <Avatar
+                                        style={{ backgroundColor: "#F5F051", color: "black" }}
+                                    >
+                                        {getUsernameInitials(user.UserName)}
+                                    </Avatar>
+                                </div>
+                                <div className="col-md-10">{user.UserName}</div>
+                            </div>
+                        ))} */}
+                        {projectMembers
+                            .filter(boardMember => !taskMembers.some(taskMember => taskMember.UserId === boardMember.UserId))
+                            .map((user, index) => (
+                                <div
+                                    className="row mb-3"
+                                    style={{ cursor: "pointer" }}
+                                    onClick={() => {
+                                        saveTaskMember(user?.UserId);
+                                    }}
+                                    key={index}
+                                >
+                                    <div className="col-md-1">
+                                        <Avatar
+                                            style={{ backgroundColor: "#F5F051", color: "black" }}
+                                        >
+                                            {getUsernameInitials(user.UserName)}
+                                        </Avatar>
+                                    </div>
+                                    <div className="col-md-10">{user.UserName}</div>
+                                </div>
+                            ))}
+                    </div>
+                </>
+            );
+            break;
+        case "Label":
+            modalContentComponent = (
+                <div>
+                    <p>Label </p>
+                    <div className="row">
+                        <div className="col-12 col-md-12">
+                            {Labels &&
+                                Labels?.map((color, index) => (
+                                    <div className="d-flex align-items-center p-2" key={index}>
+                                        <input
+                                            type="checkbox"
+                                            className="form-check-input custom-cursor-pointer custom-checkbox-lg"
+                                            onClick={(e) => {
+                                                handleCheckboxChange(e, color?.Id);
+                                            }}
+                                            checked={taskLables && taskLables.includes(color?.Id)}
+                                        />
+
+                                        <label
+                                            className="text-center pt-1 pb-1 "
+                                            style={{
+                                                height: "8%",
+                                                width: "100%",
+                                                backgroundColor: `${color?.ColourCode}`,
+                                                marginLeft: "4px",
+                                            }}
+                                            htmlFor={`${index}`}
+                                        >
+                                            <span className="p-2 text-center"> {color?.Name} </span>
+                                        </label>
+                                        <span
+                                            className="ml-3"
+                                            style={{ cursor: "pointer" }}
+                                            onClick={() => {
+                                                handleDeleteLable(color?.Id);
+                                            }}
+                                        >
+                                            <DeleteOutlined />
+                                        </span>
+                                    </div>
+                                ))}
+                        </div>
+                    </div>
+                    <div className="row mt-3">
+                        <button
+                            className="btn btn-sm btn-secondary"
+                            onClick={() => saveTaskLables()}
+                            type="button"
+                        >
+                            Save
+                        </button>
+                    </div>
+                    <hr />
+                    {createNewColor && (
+                        <div className="row mt-2">
+                            <div className="col-md-6 col-lg-4">
+                                <>
+                                    <label className="form-label">Color:</label>
+                                    <Cascader
+                                        style={{
+                                            width: "100%",
+                                            borderRadius: "4px",
+                                            border: "1px solid white",
+                                            padding: "8px",
+                                            fontSize: "14px",
+                                            backgroundColor: "#fff",
+                                            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                                            color: "#495057",
+                                        }}
+                                        options={options}
+                                        onChange={(value) =>
+                                            setNewcolor((prev) => ({
+                                                ...prev,
+                                                SectionId: taskDetails?.SectionId,
+                                                ColourCode: value ? value[0] : ''
+                                            }))
+                                        }
+                                    />
+                                </>
+                            </div>
+                            <div className="col-md-6 col-lg-8">
+                                <>
+                                    <label className="form-label">Enter Label Name:</label>
+                                    <Input
+                                        placeholder="Label Name"
+                                        variant="filled"
+                                        style={{
+                                            width: "100%",
+                                            borderRadius: "4px",
+                                            border: "1px solid #ced4da",
+                                            padding: "8px",
+                                            fontSize: "14px",
+                                            backgroundColor: "#fff",
+                                            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                                            color: "#495057",
+                                        }}
+                                        onChange={(e) =>
+                                            setNewcolor((prev) => ({
+                                                ...prev,
+                                                Name: e.target.value,
+                                            }))
+                                        }
+                                    />
+                                </>
+                            </div>
+                        </div>
+                    )}
+
+                    {createNewColor ? (
+                        <div className="row mt-3">
+                            <button
+                                className="btn btn-sm"
+                                onClick={() => {
+                                    handleCreatEvent();
+                                }}
+                                style={{ backgroundColor: "orange" }}
+                                type="button"
+                            >
+                                Add color
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="row mt-3">
+                            <button
+                                className="btn btn-sm"
+                                onClick={() => setCreateNewColor(true)}
+                                style={{ backgroundColor: "orange" }}
+                                type="button"
+                            >
+                                Add New color
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+            break;
+        case "Due Date":
+            modalContentComponent = (
+                <div>
+                    <div className="text-center mt-1 mb-1">
+                        Due Time: {selectedDueDate}
+                    </div>
+                    <DatePicker
+                        className="w-100"
+                        showTime
+                        format="YYYY-MM-DD HH:mm:ss"
+                        // onChange={handleDueDateChange}
+                        onOk={(e) =>
+                            handleDueDateChange(moment(e).format("YYYY-MM-DD HH:mm:ss"))
+                        }
+                        value={
+                            taskDetails?.DueDate
+                                ? moment(taskDetails?.DueDate)
+                                : moment(new Date())
+                        }
+                    />
+                    <div className="m-1 p-1 "></div>
+                </div>
+            );
+            break;
+        case "CheckList":
+            modalContentComponent = <p>This is CheckList content</p>;
+            break;
+        case "Attachment":
+            modalContentComponent = (
+                <div>
+                    <div className="row pt-3" style={{ display: "flex", alignItems: "center" }}>
+                        <div className="row">
+                            <div className="col-2 col-md-1 text-center">
+                                <LinkOutlined />
+                            </div>
+                            <div className="col-6 col-md-10">Attachment</div>
+                        </div>
+                        <div className="row mt-2">
+                            <div className="col-12 col-md-1"></div>
+                            <div className="col-12 col-md-11">
+                                <input
+                                    type="file"
+                                    className="form-control"
+                                    id="inputGroupFile02"
+                                    onChange={handleFile}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    {taskDetails?.AttachmentPath && <div className="row mt-3">
+                        <div className="col-12 col-12 text-center">
+                            <span className="pt-md-2" id="file-name">
+                                <Zoom
+                                    zoomMargin={40}
+                                    isOpen={isZoomed}
+                                    onZoomChange={handleZoomChange}
+                                    overlayBgColorEnd="rgba(255, 255, 255, 0.85)"
+                                >
+                                    <img
+                                        src={taskDetails?.AttachmentPath}
+                                        alt="Preview"
+                                        style={{ maxWidth: "100%", maxHeight: "100px", cursor: "pointer" }}
+                                    />
+                                </Zoom>
+                            </span>
+                        </div>
+                    </div>}
+                </div>
+            );
+            break;
+        default:
+            modalContentComponent = <p>No content available</p>;
+    }
+
+    useEffect(() => {
+        getTaskMemebers();
+        GetResourceByProjectId();
+        GetTaskActivityByTaskId();
+        GetLabelBySectionId();
+        getMembersByLoginUsers();
+        if (taskDetails?.Labels) {
+            setTaskLables(taskDetails?.Labels && JSON.parse(taskDetails?.Labels));
+        }
+    }, [taskDetails]);
+
+    const toggleEditing = () => {
+        setEditing(!editing);
+    };
+    const toggleEditingTitle = () => {
+        setEditingTitle(!editingTitle);
+    };
+
+
+    const handleSave = () => {
+        updateTask();
+        toggleEditing();
+    };
+
+    const getMembersByLoginUsers = () => {
+        taskmember.getMembersByLoginUsers().then((res) => {
+            setTeamMemberDetails(res);
+        }).catch((error) => {
+            console.log("error : ", error);
+        })
+    }
+
+    const getTaskByTaskId = () => {
+        tasks
+            .getTaskById(taskDetails?.TaskId)
+            .then((res) => {
+                setTaskDetails(res);
+            })
+            .catch((error) => {
+                console.log(error?.data?.message);
+            });
+    };
+    const updateAttachment = (formData) => {
+        tasks
+            .updateAttachment(taskDetails?.TaskId, formData)
+            .then((res) => {
+                notistack.success("Attachmetn added successfully");
+                getTaskByTaskId();
+            })
+            .catch((error) => console.log("Error while update Task: ", error));
+    };
+
+    const saveTaskLables = () => {
+        const data = { Labels: JSON.stringify(taskLables) };
+        tasklabel
+            .updateLabels(taskDetails?.TaskId, data)
+            .then((res) => {
+                notistack.success('Tasklabel updated successfully');
+                setCreateNewColor(false);
+                getTaskByTaskId();
+                setSecondShowModal(false);
+            })
+            .catch((error) => {
+                console.log(error?.data?.message);
+            })
+    }
+    const handleMemberCheckboxChange = (user, name) => {
+        const newValue = !user[name];
+        const newUser = { ...user }
+        newUser[name] = newValue
+        taskmember
+            .UpdateTaskMember(newUser.Id, newUser)
+            .then((res) => {
+                getTaskMemebers();
+            })
+            .catch((error) => {
+                console.log(error?.data?.message);
+            });
+    };
+
+    const updateTask = () => {
+        tasks
+            .updateTask(taskDetails?.TaskId, taskDetails)
+            .then((res) => {
+                notistack.success("Task updated successfully");
+                getTaskByTaskId();
+            })
+            .catch((error) => {
+                console.error("Error updating task:", error);
+            });
+    };
+
+    const updateStatus = () => {
+        taskmember
+            .UpdateViewStatus(taskDetails?.TaskId)
+            .then((res) => {
+                getTaskByTaskId();
+            })
+            .catch((error) => {
+                console.log(error?.data.message);
+            });
+    };
+
+    const handleCheckboxClick = () => {
+        const newStatus = taskDetails?.DueDateStatus === 1 ? 0 : 1;
+        updateDueDateStatus(taskDetails?.TaskId, newStatus);
+    };
+
+    const updateDueDateStatus = (taskId, status) => {
+        tasks
+            .updateDueDateStatus(taskId, status)
+            .then((res) => {
+                getTaskByTaskId();
+            })
+            .catch((error) => {
+                console.log(error?.data.message);
+            });
+    };
+    const getTaskMemebers = () => {
+        taskmember
+            .getMembersByTaskById(taskDetails?.TaskId)
+            .then((res) => {
+                setTaskMembers(res);
+            })
+            .catch((error) => {
+                console.log(error?.data?.message);
+            });
+    };
+    const GetResourceByProjectId = () => {
+        projectresourcemain
+            .GetResourceByProjectId(taskDetails?.ProjectId)
+            .then((res) => {
+                setProjectMembers(res);
+            })
+            .catch((error) => {
+                console.log(error?.data?.message);
+            });
+    };
+    const handleCheckboxChange = (e, colorid) => {
+        if (e.target.checked) {
+            setTaskLables(prev => [...prev, colorid]);
+        } else {
+            setTaskLables(prev => prev.filter(id => id !== colorid));
+        }
+    };
+    const saveTaskMember = (userId) => {
+        const newObj = {
+            TaskId: taskDetails?.TaskId,
+            UserId: userId,
+            AllowChangeStatus: "",
+            AllowLabels: "",
+            AllowDueDates: "",
+            IsWatched: "",
+        };
+        taskmember
+            .SaveTaskMember(newObj)
+            .then((res) => {
+                getTaskMemebers();
+                GetResourceByProjectId();
+            })
+            .catch((error) => {
+                console.log(error?.data?.message);
+            });
+    };
+    const handleDeleteTaskMember = (Id) => {
+        taskmember
+            .DeleteTaskMember(Id)
+            .then((res) => {
+                notistack.success("TaskMember removed successfully");
+                getTaskMemebers();
+            })
+            .catch((error) => {
+                console.log(error?.data?.message);
+            });
+    };
+
+    const SaveTaskActivity = () => {
+        const newData = {
+            TaskId: taskDetails?.TaskId,
+            ActivityDetails: activityContent,
+        };
+        taskactivity
+            .SaveTaskActivity(newData)
+            .then((res) => {
+                notistack.success("Activity added successfully");
+                setActivityContent("");
+                GetTaskActivityByTaskId();
+            })
+            .catch((error) => {
+                console.log(error?.data?.message);
+            });
+    };
+    const GetLabelBySectionId = () => {
+        tasklabel
+            .GetBySectionId(taskDetails?.SectionId)
+            .then((res) => {
+                setLabels(res);
+            })
+            .catch((error) => {
+                console.log(error?.data?.message);
+            });
+    };
+    const handleDeleteLable = (Id) => {
+        const value = taskLables.filter((item) => item !== Id);
+        setTaskLables(value);
+        tasklabel
+            .DeleteTaskLabels(Id)
+            .then((res) => {
+                notistack.success('Label deleted successfully');
+                GetLabelBySectionId();
+            })
+            .catch((error) => {
+                console.log(error?.data?.message);
+            })
+    }
+    const GetTaskActivityByTaskId = () => {
+        taskactivity
+            .GetTaskActivityByTaskId(taskDetails?.TaskId)
+            .then((res) => {
+                setTaskActivity(res);
+            })
+            .catch((error) => {
+                console.log(error?.data?.message);
+            });
+    };
+    function getUsernameInitials(username) {
+        const nameParts = username.split(" ");
+        const firstNameInitial = nameParts[0][0];
+        const lastNameInitial =
+            nameParts.length > 1 ? nameParts[nameParts.length - 1][0] : "";
+        return `${firstNameInitial}${lastNameInitial}`.toUpperCase();
+    }
+    const openModal = (content) => {
+        setModalContent(content);
+        setSecondShowModal(true);
+    };
+
+    const handleFile = (e) => {
+        const file = e.target.files[0];
+        let formData = new FormData();
+        formData.append("Attachment", file);
+        updateAttachment(formData);
+    };
+
+    const handleCreatEvent = () => {
+        if (newcolor?.ColourCode && newcolor?.Name) {
+            tasklabel
+                .SaveTaskLabels(newcolor)
+                .then((res) => {
+                    notistack.success("Color added succcessfully");
+                    setNewcolor({
+                        SectionId: "",
+                        ColourCode: "",
+                        Name: "",
+                    });
+                    setCreateNewColor(false);
+                    GetLabelBySectionId();
+                })
+                .catch((error) => {
+                    console.log(error?.data?.message);
+                });
+        } else {
+            notistack.error("Select ColourCode and Name");
+        }
+    };
+    const handleSaveChildModel = () => {
+        setSecondShowModal(false);
+        updateTask();
+    };
+    const handleDueDateChange = (dateString) => {
+        handleSetData("DueDate", dateString);
+        setSelectedDueDate(dateString);
+    };
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        handleSetData(name, value);
+    };
+    const handleSetData = (name, value) => {
+        setTaskDetails((prevState) => ({
+            ...prevState,
+            [name]: value,
+        }));
+    };
+
+    return (
+        <>
+            <Modal
+                style={{ backgroundColor: "#f8f4f4" }}
+                width={780}
+                className="mt-2"
+                // title="Basic Modal"
+                onCancel={onClose}
+                open={true}
+                maskClosable={false}
+                footer={[
+                    <Button key="back" onClick={onClose}>
+                        Close
+                    </Button>,
+                ]}
+            >
+                <div className="Container">
+                    <div className="row">
+                        <div className="col-12 col-md-9 pt-3">
+                            {/* Title */}
+                            {/* <div className="row" style={{ display: 'flex', alignItems: "center" }}>
+                                <div className="col-1 text-center">
+                                    <SlidersOutlined />
+                                </div>
+                                <div className='col-11'>
+                                    <Input placeholder="Title" name="TaskTitle"
+                                        onChange={(e) => handleChange(e)} value={taskDetails?.TaskTitle} onBlur={updateTask} />
+                                </div>
+                            </div> */}
+                            <div className='d-flex '>
+                                <FileTextOutlined className="mx-2" style={{ fontSize: 'large' }} />
+                                {editingTitle ? (
+                                    <Input
+                                        placeholder="Title"
+                                        name="TaskTitle"
+                                        onChange={(e) => handleChange(e)}
+                                        value={taskDetails?.TaskTitle}
+                                        onBlur={() => { updateTask(), setEditingTitle(false) }}
+                                    />
+                                ) : (
+                                    <div className='hide-scrollbar-one' style={{ maxHeight: '5em', overflowY: 'scroll' }}>
+                                        <h3 onClick={() => setEditingTitle(true)}>{taskDetails?.TaskTitle}</h3>
+                                    </div>
+                                )}
+                            </div>
+                            <hr className='d-flex justify-content-center ' style={{ width: '97%' }} />
+
+                            {/* Below Title */}
+                            <div
+                                className="row pt-4 "
+                                style={{ display: "flex", alignItems: "center" }}
+                            >
+                                <div className="row">
+                                    <div className="col-6 col-md-3 px-2" >
+                                        <span style={{ fontSize: 'medium' }}>Members</span><br />
+                                        <span onClick={() => openModal('Add Member')} style={{ cursor: 'pointer' }} className='pt-2  '>
+                                            <Avatar.Group
+                                                maxCount={2}
+                                                maxStyle={{
+                                                    color: "white",
+                                                    backgroundColor: "black",
+                                                }}
+                                            >
+                                                {taskMembers.map((profile, index) => (
+                                                    <Avatar
+                                                        key={index}
+                                                        // src={profile.profilePath}
+                                                        style={{ backgroundColor: "#F5F051", color: 'black' }}
+                                                    >
+                                                        {getUsernameInitials(profile?.UserName)}
+                                                    </Avatar>
+                                                ))}
+                                            </Avatar.Group>
+                                        </span>
+                                    </div>
+                                    <div className="col-6 col-md-6 px-2">
+                                        <span className='d-block ' style={{ fontSize: 'medium' }}>
+                                            DueDate
+                                        </span>
+                                        <Tooltip title={`This card is ${getStatusName(taskDetails?.DueDateStatus, taskDetails?.DueDate).name}`}>
+                                            <div className='py-1 px-2 d-flex align-items-center' style={{ backgroundColor: '#f3f1f1', borderRadius: '5px' }}>
+                                                <Checkbox
+                                                    style={{ marginRight: '8px' }}
+                                                    onClick={handleCheckboxClick}
+                                                    disabled={!taskDetails?.DueDate}
+                                                    checked={taskDetails?.DueDateStatus === 1 ? true : false} />
+
+                                                <a href='#' className='text-dark d-flex justify-content-between' onClick={() => openModal('Due Date')}>
+                                                    <span className='mx-1' style={{ fontSize: 'small' }}>
+                                                        {taskDetails?.DueDate ? moment(taskDetails?.DueDate).format('DD-MMM-YYYY HH:mm:ss') : 'Select Date'}
+                                                    </span>
+                                                    <span
+                                                        className='mx-1 px-1 d-flex '
+                                                        style={{
+                                                            backgroundColor: getStatusColor(taskDetails?.DueDateStatus, taskDetails?.DueDate),
+                                                            height: 'fit-content',
+                                                            borderRadius: '5px',
+                                                            color: 'white'
+                                                        }}
+                                                    >
+                                                        <span className='px-1'>{getStatusName(taskDetails?.DueDateStatus, taskDetails?.DueDate).icon}</span>
+                                                        <span className='px-1'>{getStatusName(taskDetails?.DueDateStatus, taskDetails?.DueDate).name}</span>
+                                                    </span>
+                                                </a>
+                                            </div>
+                                        </Tooltip>
+                                    </div>
+                                    <div className="col-6 col-md-3 px-2 ">
+                                        <span className='d-block ' style={{ fontSize: 'medium' }}>Notification</span>
+                                        <div className='d-flex justify-content-between align-items-center py-1 px-2' style={{ backgroundColor: '#f3f1f1', borderRadius: '5px', cursor: 'pointer' }}>
+                                            <Tooltip title={`Watch to get notification for updates on this card.`}>
+                                                <div className='d-flex align-items-center' onClick={updateStatus} >
+                                                    <span style={{ marginRight: '8px' }}><EyeOutlined /></span>
+                                                    <span style={{ marginRight: '8px' }}>Watching</span>
+                                                    <span className='px-1 text-dark' style={{ backgroundColor: 'rgb(213 209 209)', borderRadius: '5px' }}><CheckOutlined /></span>
+                                                </div>
+                                            </Tooltip>
+                                        </div>
+                                    </div>
+                                    <div className="col-6 col-md-4 px-2 my-2 ">
+                                        <span className='d-block ' style={{ fontSize: 'medium' }}>Labels</span>
+                                        <div className="d-flex flex-wrap" onClick={() => openModal("Label")}>
+                                            {taskDetails?.Labels &&
+                                                JSON.parse(taskDetails?.Labels)?.map((item, index) => {
+                                                    const matchingObjects = Labels?.filter(
+                                                        (obj) => obj.Id === item
+                                                    );
+                                                    const colorInfo = matchingObjects?.map((obj) => ({
+                                                        Name: obj.Name,
+                                                        ColourCode: obj.ColourCode,
+                                                    }));
+                                                    return (
+                                                        <React.Fragment key={index}>
+                                                            {colorInfo.map((coloritem, idx) => (
+                                                                <span
+                                                                    key={idx}
+                                                                    className=" col-4 mr-2 mb-2 p-1 px-2"
+                                                                    style={{
+                                                                        backgroundColor: coloritem?.ColourCode,
+                                                                        borderRadius: "5px",
+                                                                        cursor: "pointer",
+                                                                        whiteSpace: "nowrap",
+                                                                    }}
+                                                                >
+                                                                    {coloritem?.Name}
+                                                                </span>
+                                                            ))}
+                                                        </React.Fragment>
+                                                    );
+                                                })}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {/* Description */}
+                            <div
+                                className="row mt-4 "
+                                style={{ display: "flex", alignItems: "center" }}
+                            >
+                                <div className="row">
+                                    <div className="col-1 col-md-1 text-center">
+                                        <UnorderedListOutlined />
+                                    </div>
+                                    <div className="col-9">
+                                        <span style={{ fontSize: "medium" }}>Description :</span>
+                                    </div>
+                                    {!editing && (
+                                        <div className="col-2">
+                                            <a className="px-2" href="#" onClick={toggleEditing}>
+                                                Edit
+                                            </a>
+                                        </div>
+                                    )}
+                                </div>
+                                {editing ? (
+                                    <div className="m-2">
+                                        <CKEditor
+                                            editor={ClassicEditor}
+                                            data={
+                                                taskDetails?.Description ||
+                                                "Add a more detailed description…"
+                                            }
+                                            onChange={(event, editor) => {
+                                                const data = editor.getData();
+                                                setEditorContent(data);
+                                                if (data) {
+                                                    setTaskDetails(prevState => ({ ...prevState, ['Description']: data }));
+                                                } else {
+                                                    setTaskDetails(prevState => ({ ...prevState, ['Description']: taskDetails?.Description }));
+                                                }
+                                            }}
+                                        />
+                                        <div className="row d-flex justify-content-end ">
+                                            <button
+                                                className="btn btn-info btn-sm w-auto "
+                                                onClick={handleSave}
+                                            >
+                                                Save
+                                            </button>
+                                            <button
+                                                className="btn btn-info btn-sm mx-2 w-auto "
+                                                onClick={toggleEditing}
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="row d-flex justify-content-center ">
+                                            <div className="col-11 p-2 my-2 ck-editor-description hide-scrollbar-one">
+                                                <div
+                                                    dangerouslySetInnerHTML={{
+                                                        __html: taskDetails?.Description,
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                            {/* Attachment */}
+                            {/* <div
+                                className="row pt-3 "
+                                style={{ display: "flex", alignItems: "center" }}
+                            >
+                                <div className="row">
+                                    <div className="col-2 col-md-1 text-center">
+                                        <LinkOutlined />
+                                    </div>
+                                    <div className="col-6 col-md-10 ">Attachment</div>
+                                </div>
+                                <div className="row mt-2">
+                                    <div className="col-12 col-md-1"></div>
+                                    <div className="col-12 col-md-11">
+                                        <input
+                                            type="file"
+                                            className="form-control"
+                                            id="inputGroupFile02"
+                                            onChange={handleFile}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="row mt-3">
+                                    <div className="col-12 col-12 text-center">
+                                        <span className="pt-md-2" id="file-name">
+                                            {taskDetails?.AttachmentPath && (
+                                                <img
+                                                    src={taskDetails?.AttachmentPath}
+                                                    alt="Preview"
+                                                    style={{ maxWidth: "100%", maxHeight: "100px" }}
+                                                />
+                                            )}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div> */}
+                            <div>
+                                <div className="row pt-3" style={{ display: "flex", alignItems: "center" }}>
+                                    <div className="row">
+                                        <div className="col-2 col-md-1 text-center">
+                                            <LinkOutlined />
+                                        </div>
+                                        <div className="col-6 col-md-10">Attachment</div>
+                                    </div>
+                                    <div className="row mt-2">
+                                        <div className="col-12 col-md-1"></div>
+                                        <div className="col-12 col-md-11">
+                                            <input
+                                                type="file"
+                                                className="form-control"
+                                                id="inputGroupFile02"
+                                                onChange={handleFile}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="row mt-3">
+                                    <div className="col-12 col-12 text-center">
+                                        <span className="pt-md-2" id="file-name">
+                                            <Zoom
+                                                zoomMargin={40}
+                                                isOpen={isZoomed}
+                                                onZoomChange={handleZoomChange}
+                                                overlayBgColorEnd="rgba(255, 255, 255, 0.85)"
+                                            >
+                                                <img
+                                                    src={taskDetails?.AttachmentPath}
+                                                    alt="Preview"
+                                                    style={{ maxWidth: "100%", maxHeight: "100px", cursor: "pointer" }}
+                                                />
+                                            </Zoom>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/*Activity  */}
+                            <div
+                                className="row pt-3 "
+                                style={{ display: "flex", alignItems: "center" }}
+                            >
+                                <div className="row">
+                                    <div className="col-2 col-md-1 text-center">
+                                        <ProfileOutlined />
+                                    </div>
+                                    <div className="col-6 col-md-8 ">
+                                        <span style={{ fontSize: "medium" }}>Activity</span>
+                                    </div>
+                                    {taskActivity.length > 1 && (
+                                        <div className="col-6 col-md-3 text-end ">
+                                            <a
+                                                href="#"
+                                                onClick={() =>
+                                                    setShowActivity((prevState) => !prevState)
+                                                }
+                                            >
+                                                {showActivity ? "Hide Activity" : "Show Details"}
+                                            </a>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="row mt-3">
+                                    <div className="col-12 col-md-1"></div>
+                                    <div className="col-12">
+                                        <CKEditor
+                                            style={{ minHeight: "10em" }}
+                                            editor={ClassicEditor}
+                                            data={activityContent}
+                                            onChange={(event, editor) => {
+                                                const data = editor.getData();
+                                                setActivityContent(data);
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="col-12 d-flex justify-content-end ">
+                                        <button
+                                            type="Button"
+                                            className="btn btn-info w-auto "
+                                            onClick={SaveTaskActivity}
+                                        >
+                                            Save
+                                        </button>
+                                    </div>
+                                </div>
+                                {showActivity ? (
+                                    <div className="mt-4">
+                                        {taskActivity?.map((data, index) => (
+                                            <>
+                                                <div className="row">
+                                                    <div className="col-12">
+                                                        <small>
+                                                            <img
+                                                                src={data?.ProfileImagePath}
+                                                                style={{
+                                                                    borderRadius: "50%",
+                                                                    aspectRatio: "1/1",
+                                                                    width: "3em",
+                                                                }}
+                                                            />
+                                                            <span className="fw-bold mx-2">
+                                                                {taskActivity?.UserName}
+                                                            </span>
+                                                            <span>
+                                                                (
+                                                                {moment(data?.CreatedDate).format(
+                                                                    "DD/MM/YYYY - hh:mm"
+                                                                )}
+                                                                )
+                                                            </span>
+                                                        </small>{" "}
+                                                    </div>
+                                                    <div className="col-12">
+                                                        <p className="py-1 px-2">
+                                                            <div
+                                                                dangerouslySetInnerHTML={{
+                                                                    __html: data?.ActivityDetails,
+                                                                }}
+                                                            />
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="mt-4">
+                                        {taskActivity.length > 0 && (
+                                            <div className="row">
+                                                <div className="col-12">
+                                                    <small>
+                                                        <img
+                                                            src={taskActivity[0]?.ProfileImagePath}
+                                                            style={{
+                                                                borderRadius: "50%",
+                                                                aspectRatio: "1/1",
+                                                                width: "3em",
+                                                            }}
+                                                        />
+                                                        <span className="fw-bold mx-2">
+                                                            {taskActivity[0]?.UserName}
+                                                        </span>
+                                                        <span>
+                                                            (
+                                                            {moment(taskActivity[0]?.CreatedDate).format(
+                                                                "DD/MM/YYYY - hh:mm"
+                                                            )}
+                                                            )
+                                                        </span>
+                                                    </small>
+                                                </div>
+                                                <div className="col-12">
+                                                    <p className="py-1 px-2">
+                                                        <div
+                                                            dangerouslySetInnerHTML={{
+                                                                __html: taskActivity[0]?.ActivityDetails,
+                                                            }}
+                                                        />
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="col-12 col-md-3 mt-4">
+                            <div
+                                className="col-12 p-1 mb-3 text-center kanban-card-other-btn"
+                                onClick={() => openModal("Add Member")}
+                            >
+                                <span className="p-4">Add Member</span>
+                            </div>
+                            <div
+                                className="col-12 p-1 mb-3 text-center kanban-card-other-btn"
+                                onClick={() => openModal("Label")}
+                            >
+                                <span className="p-4">Label</span>
+                            </div>
+                            <div
+                                className="col-12 p-1 mb-3 text-center kanban-card-other-btn"
+                                onClick={() => openModal("Due Date")}
+                            >
+                                <span className="p-4">Due Date</span>
+                            </div>
+                            {/* {teamMemberDetails?.AllowAddMembers ? (
+                                <div
+                                    className="col-12 p-1 mb-3 text-center kanban-card-other-btn"
+                                    onClick={() => openModal("Add Member")}
+                                >
+                                    <span className="p-4">Add Member</span>
+                                </div>
+                            ) : (
+                                <Tooltip title="You don't have permission to add members">
+                                    <div className="col-12 p-1 mb-3 text-center kanban-card-other-btn">
+                                        <span className="p-4" style={{ cursor: 'not-allowed' }}>Add Member</span>
+                                    </div>
+                                </Tooltip>
+                            )
+                            }
+                            {teamMemberDetails?.AllowLabels ? (
+                                <div
+                                    className="col-12 p-1 mb-3 text-center kanban-card-other-btn"
+                                    onClick={() => openModal("Label")}
+                                >
+                                    <span className="p-4">Label</span>
+                                </div>
+                            ) : (
+                                <Tooltip title="You don't have permission to add label">
+                                    <div className="col-12 p-1 mb-3 text-center kanban-card-other-btn">
+                                        <span className="p-4" style={{ cursor: 'not-allowed' }}>Label</span>
+                                    </div>
+                                </Tooltip>
+                            )
+                            }
+                            {teamMemberDetails?.AllowDueDates ? (
+                                <div
+                                    className="col-12 p-1 mb-3 text-center kanban-card-other-btn"
+                                    onClick={() => openModal("Due Date")}
+                                >
+                                    <span className="p-4">Due Date</span>
+                                </div>
+                            ) : (
+                                <Tooltip title="You don't have permission to change due date">
+                                    <div className="col-12 p-1 mb-3 text-center kanban-card-other-btn">
+                                        <span className="p-4" style={{ cursor: 'not-allowed' }}>Due Date</span>
+                                    </div>
+                                </Tooltip>
+                            )
+                            } */}
+                            <div
+                                className="col-12 p-1 mb-3 text-center kanban-card-other-btn"
+                                onClick={() => openModal("CheckList")}
+                            >
+                                <span className="p-4">CheckList</span>
+                            </div>
+                            <div
+                                className="col-12 p-1 mb-3 text-center kanban-card-other-btn"
+                                onClick={() => openModal("Attachment")}
+                            >
+                                <span className="p-4">Attachment</span>
+                            </div>
+
+                            {/* Render modal if showModal is true */}
+                            {showSecondModal && (
+                                <Modal
+                                    title={modalContent}
+                                    style={{ scrollbarWidth: "thin", bottom: 50 }}
+                                    visible={showSecondModal}
+                                    onCancel={() => setSecondShowModal(false)}
+                                    // footer={null}
+                                    onOk={handleSaveChildModel}
+                                    maskClosable={false}
+                                    width={
+                                        modalContent === "Add Member"
+                                            ? 600
+                                            : modalContent === "Label"
+                                                ? 300
+                                                : modalContent === "Due Date"
+                                                    ? 300
+                                                    : modalContent === "CheckList"
+                                                        ? 450
+                                                        : modalContent === "Attachment"
+                                                            ? 300
+                                                            : 500
+                                    }
+                                >
+                                    {modalContentComponent}
+                                </Modal>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </Modal>
+        </>
+    );
+};
+export default ModaComponent;
